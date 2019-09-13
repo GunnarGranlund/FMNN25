@@ -4,19 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def hot(u_vec,u):
-    return (u_vec > u).argmax()
+def hot(u_vec, u):
+    return (u_vec > u).argmax() -1
 
-def control(d, u ,alpha):
-    return d
-
-def plot(SU,d):
-    plt.plot(SU[0,:], SU[1,:], label='Spline')
-    plt.plot(d[:,0], d[:,1], color='r', marker='o', ls='-.', label='Control Polygon')
-    plt.grid()
-    plt.legend()
-    plt.show()
-        
 
 def basis_function(u, u_vec, i, k):
     
@@ -34,6 +24,7 @@ def basis_function(u, u_vec, i, k):
 
     return N(u)
 
+
 class CubicSpline:
     def __init__(self, u, u_vec, d):
         self.d = d
@@ -42,37 +33,36 @@ class CubicSpline:
         self.hot_interval = hot(u, u_vec)
         self.alpha = (u_vec[-1] - u) / (u_vec[-1] - u_vec[0])
 
-
     def __call__(self, *args, **kwargs):
         print("Hot interval is ", self.hot_interval)
         print("Alpha is", self.alpha)
 
-   
-
     def su(self, rm, lm):
         if rm-lm == 3:
-            #print("In if statsen")
-            #print("Rm and Lm is: ", rm, lm)
             alpha = (self.u_vec[rm] - self.u)/(self.u_vec[rm] - self.u_vec[lm])
             return alpha*self.d[lm,:] + (1-alpha)*self.d[lm+1,:]
         elif self.u_vec[rm] - self.u_vec[lm] == 0:
             alpha = 0
             return alpha*self.su(rm, lm-1) + (1-alpha)* self.su(rm+1, lm)   
         else:
-            #print("In else satsen")
-            #print("Rm and Lm is: ", rm, lm)
             alpha = (self.u_vec[rm] - self.u)/(self.u_vec[rm] - self.u_vec[lm])
-            return alpha*self.su(rm, lm-1) + (1-alpha)* self.su(rm+1, lm)    
+            return alpha*self.su(rm, lm-1) + (1-alpha)* self.su(rm+1, lm)
 
+    def plot(self, SU):
+        plt.plot(SU[0, :], SU[1, :], label='Spline')
+        plt.plot(self.d[:, 0], self.d[:, 1], color='r', marker='o', ls='-.', label='Control Polygon')
+        plt.grid()
+        plt.legend()
+        plt.show()
 
 
 if __name__ == '__main__':
    # u_vec = np.array([0., 0., 0.,0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7,0.8, 1.0, 1.0, 1.0])
-    u = np.linspace(0.001,1.0,1000.0)
+    u = np.linspace(0.001, 1.0, 1000)
     u_vec = np.linspace(0, 1, 26)
     u_vec[ 1] = u_vec[ 2] = u_vec[ 0]
     u_vec[-3] = u_vec[-2] = u_vec[-1]
-    print(u_vec)
+    #print(u_vec)
     #d = np.array([[1., 2., 6., 7., 9., 6., 2., 6., 2., 7., 4., 0.], [8., 3., 4., 0., 10., 8., 1., 7., 4., 0., 1., 5.]]) 
     d = np.array([(-12.73564, 9.03455),
         (-26.77725, 15.89208),
@@ -98,29 +88,11 @@ if __name__ == '__main__':
         (14.36797, 3.91883),
         (27.59321, 9.68786),
         (39.67575, 17.30712)])
-    #Nj = basis_function(u, u_vec, 2, 1)
-    #print(Nj)
-    SU = np.zeros((2,len(u)))
-    print(d)
+    SU = np.zeros((2, len(u)))
+
     for k in range(len(u)):
         spline = CubicSpline(u[k], u_vec, d)
-        i = hot(u_vec, u[k]) -1
-        print(i)
-        SU[:,k] = spline.su(i+1,i)
-        #print(D[:,k])
-    
-    # print(D[0,:])
-    #print(D[1:,])
+        i = hot(u_vec, u[k])
+        SU[:, k] = spline.su(i+1, i)
 
-    plot(SU,d)
-  #  print(i)
-   # print(spline.su(i+1, i))
-    
-   
-
-
-
-
-    #Find hot interval
-    #Create basis functions
-    #Find the control points, blossom recusion
+    spline.plot(SU)
