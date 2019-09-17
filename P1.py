@@ -1,5 +1,3 @@
-import os
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -12,7 +10,7 @@ def basis_function(u, u_vec, i, k):
     if k == 0:
         if u_vec[i - 1] == u_vec[i]:
             return 0
-        elif u_vec[i-1] <= u < u_vec[i]:
+        elif u_vec[i - 1] <= u < u_vec[i]:
             return 1
         else:
             return 0
@@ -23,7 +21,7 @@ def basis_function(u, u_vec, i, k):
         u4 = u_vec[i + k] - u_vec[i]
         if u1 == 0 and u2 == 0 and u3 == 0 and u4 == 0:
             return np.dot(0, basis_function(u, u_vec, i, k - 1)) \
-                   + np.dot(0, basis_function(u, u_vec, i +1, k - 1))
+                   + np.dot(0, basis_function(u, u_vec, i + 1, k - 1))
         elif u1 == 0 and u2 == 0:
             return np.dot(0, basis_function(u, u_vec, i, k - 1)) \
                    + np.dot(u3 / u4, basis_function(u, u_vec, i + 1, k - 1))
@@ -31,7 +29,8 @@ def basis_function(u, u_vec, i, k):
             return np.dot(u1 / u2, basis_function(u, u_vec, i, k - 1)) \
                    + np.dot(0, basis_function(u, u_vec, i + 1, k - 1))
 
-        return np.dot(u1 / u2, basis_function(u, u_vec, i, k - 1)) + np.dot(u3 / u4, basis_function(u, u_vec, i+1, k - 1))
+        return np.dot(u1 / u2, basis_function(u, u_vec, i, k - 1)) + np.dot(u3 / u4,
+                                                                            basis_function(u, u_vec, i + 1, k - 1))
 
 
 class CubicSpline:
@@ -39,29 +38,39 @@ class CubicSpline:
         self.d = d
         self.u = u
         self.u_vec = u_vec
-        self.hot_interval = hot(u, u_vec)
         self.alpha = (u_vec[-1] - u) / (u_vec[-1] - u_vec[0])
 
+        self.su = np.zeros((2, len(u)))
+        self.N = np.zeros(len(u))
+
+        for k in range(len(u)):
+            i = hot(u_vec, u[k])
+            self.su[:, k] = self.blossom(u[k], i + 1, i)
+            self.N[k] = basis_function(u[k], u_vec, 5, 3)
+
     def __call__(self, *args, **kwargs):
-        print("Hot interval is ", self.hot_interval)
         print("Alpha is", self.alpha)
 
-    def su(self, rm, lm):
+    def blossom(self, curr_u, rm, lm):
         if rm - lm == 3:
-            alpha = (self.u_vec[rm] - self.u) / (self.u_vec[rm] - self.u_vec[lm])
+            alpha = (self.u_vec[rm] - curr_u) / (self.u_vec[rm] - self.u_vec[lm])
             return alpha * self.d[lm, :] + (1 - alpha) * self.d[lm + 1, :]
         elif self.u_vec[rm] - self.u_vec[lm] == 0:
             alpha = 0
-            return alpha * self.su(rm, lm - 1) + (1 - alpha) * self.su(rm + 1, lm)
+            return alpha * self.blossom(curr_u, rm, lm - 1) + (1 - alpha) * self.blossom(curr_u, rm + 1, lm)
         else:
-            alpha = (self.u_vec[rm] - self.u) / (self.u_vec[rm] - self.u_vec[lm])
-            return alpha * self.su(rm, lm - 1) + (1 - alpha) * self.su(rm + 1, lm)
+            alpha = (self.u_vec[rm] - curr_u) / (self.u_vec[rm] - self.u_vec[lm])
+            return alpha * self.blossom(curr_u, rm, lm - 1) + (1 - alpha) * self.blossom(curr_u, rm + 1, lm)
 
-    def plot(self, SU):
-        plt.plot(SU[0, :], SU[1, :], label='Spline')
+    def plot(self):
+        plt.plot(self.su[0, :], self.su[1, :], label='Spline')
         plt.plot(self.d[:, 0], self.d[:, 1], color='r', marker='o', ls='-.', label='Control Polygon')
         plt.grid()
         plt.legend()
+        plt.show()
+
+    def plot_basis(self):
+        plt.plot(self.u, self.N)
         plt.show()
 
 
@@ -97,14 +106,8 @@ if __name__ == '__main__':
                   (14.36797, 3.91883),
                   (27.59321, 9.68786),
                   (39.67575, 17.30712)])
-    SU = np.zeros((2, len(u)))
-    N = np.zeros(len(u))
-    for k in range(len(u)):
-        spline = CubicSpline(u[k], u_vec, d)
-        i = hot(u_vec, u[k])
-        SU[:, k] = spline.su(i + 1, i)
-        N[k] = basis_function(u[k], u_vec, 5, 3)
 
-    plt.plot(u, N)
-    plt.show()
-    # spline.plot(SU)
+    spline = CubicSpline(u, u_vec, d)
+    spline.plot()
+    spline.plot_basis()
+
