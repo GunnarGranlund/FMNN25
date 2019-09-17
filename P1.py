@@ -22,10 +22,10 @@ def basis_function(u, u_vec, i, k):
         if u1 == 0 and u2 == 0 and u3 == 0 and u4 == 0:
             return np.dot(0, basis_function(u, u_vec, i, k - 1)) \
                    + np.dot(0, basis_function(u, u_vec, i + 1, k - 1))
-        elif u1 == 0 and u2 == 0:
+        elif u2 == 0 or u1 == 0 and u2 == 0:
             return np.dot(0, basis_function(u, u_vec, i, k - 1)) \
                    + np.dot(u3 / u4, basis_function(u, u_vec, i + 1, k - 1))
-        elif u3 == 0 and u4 == 0:
+        elif u4 == 0 or u3 == 0 and u4 == 0:
             return np.dot(u1 / u2, basis_function(u, u_vec, i, k - 1)) \
                    + np.dot(0, basis_function(u, u_vec, i + 1, k - 1))
 
@@ -36,6 +36,7 @@ def basis_function(u, u_vec, i, k):
 class CubicSpline:
     def __init__(self, u, u_vec, d):
         self.d = d
+        self.d_points = []
         self.u = u
         self.u_vec = u_vec
         self.alpha = (u_vec[-1] - u) / (u_vec[-1] - u_vec[0])
@@ -46,20 +47,27 @@ class CubicSpline:
         for k in range(len(u)):
             i = hot(u_vec, u[k])
             self.su[:, k] = self.blossom(u[k], i + 1, i)
-            self.N[k] = basis_function(u[k], u_vec, 5, 3)
 
     def __call__(self, *args, **kwargs):
         print("Alpha is", self.alpha)
 
-    def blossom(self, curr_u, rm, lm):
+    def blossom(self, curr_u, rm, lm, save=False):
         if rm - lm == 3:
             alpha = (self.u_vec[rm] - curr_u) / (self.u_vec[rm] - self.u_vec[lm])
+            if save:
+                self.d_points.append(alpha * self.d[lm, :] + (1 - alpha) * self.d[lm + 1, :])
             return alpha * self.d[lm, :] + (1 - alpha) * self.d[lm + 1, :]
         elif self.u_vec[rm] - self.u_vec[lm] == 0:
             alpha = 0
+            if save:
+                self.d_points.append(alpha * self.blossom(curr_u, rm, lm - 1, True) + (1 - alpha)
+                                     * self.blossom(curr_u, rm + 1, lm, True))
             return alpha * self.blossom(curr_u, rm, lm - 1) + (1 - alpha) * self.blossom(curr_u, rm + 1, lm)
         else:
             alpha = (self.u_vec[rm] - curr_u) / (self.u_vec[rm] - self.u_vec[lm])
+            if save:
+                self.d_points.append(alpha * self.blossom(curr_u, rm, lm - 1, True) + (1 - alpha)
+                                     * self.blossom(curr_u, rm + 1, lm, True))
             return alpha * self.blossom(curr_u, rm, lm - 1) + (1 - alpha) * self.blossom(curr_u, rm + 1, lm)
 
     def plot(self):
@@ -69,19 +77,34 @@ class CubicSpline:
         plt.legend()
         plt.show()
 
-    def plot_basis(self):
+    def plot_basis(self, j, k):
+        for i in range(len(u)):
+            self.N[i] = basis_function(u[i], u_vec, j, k)
         plt.plot(self.u, self.N)
         plt.show()
 
+    def plot_d_points(self, j):
+        i = hot(u_vec, u[j])
+        su6 = self.blossom(u[j], i + 1, i, True)
+        x = np.zeros(3)
+        y = np.zeros(3)
+        for k in range(3):
+            x[k] = self.d_points[k][0]
+            y[k] = self.d_points[k][1]
+        plt.plot(x, y, color='b', marker='o', ls='-.')
+        plt.plot(self.d[i-2][0], self.d[i-2][1], color='r', marker='o')
+        plt.show()
+
+        print(self.d_points[0])
+        print(su6)
+
+
 
 if __name__ == '__main__':
-    # u_vec = np.array([0., 0., 0.,0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7,0.8, 1.0, 1.0, 1.0])
     u = np.linspace(0.001, 1.0, 1000)
     u_vec = np.linspace(0, 1, 26)
     u_vec[1] = u_vec[2] = u_vec[0]
     u_vec[-3] = u_vec[-2] = u_vec[-1]
-    # print(u_vec)
-    # d = np.array([[1., 2., 6., 7., 9., 6., 2., 6., 2., 7., 4., 0.], [8., 3., 4., 0., 10., 8., 1., 7., 4., 0., 1., 5.]])
     d = np.array([(-12.73564, 9.03455),
                   (-26.77725, 15.89208),
                   (-42.12487, 20.57261),
@@ -108,6 +131,6 @@ if __name__ == '__main__':
                   (39.67575, 17.30712)])
 
     spline = CubicSpline(u, u_vec, d)
-    spline.plot()
-    spline.plot_basis()
-
+    # spline.plot()
+    # spline.plot_basis(5, 3)
+    spline.plot_d_points(100)
