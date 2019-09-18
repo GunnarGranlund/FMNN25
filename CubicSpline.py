@@ -181,6 +181,8 @@ if __name__ == '__main__':
     spline = CubicSpline(u, u_vec, d)
     spline2 = CubicSpline(u, u_vec2, knots)
 
+    N = np.zeros(len(u))
+    S = np.zeros(len(u))
     S = np.zeros(len(u))
     Nx = np.zeros(len(u))
     Ny = np.zeros(len(u))
@@ -196,12 +198,12 @@ if __name__ == '__main__':
     
     #print(S)
     #plt.plot(u,S)
-    plt.show()
+    #plt.show()
    
     #spline.plot()
-    plt.plot(spline2.su[0, :], spline2.su[1, :], label='New Spline')
+    #plt.plot(spline2.su[0, :], spline2.su[1, :], label='New Spline')
     #plt.plot(knots[:, 0], knots[:, 1], color='r', marker='o', ls='-.', label='Control Polygon')
-    plt.plot(d2[:, 0], d2[:, 1], color='b', marker='o', ls='-.', label='Given data points')
+    #plt.plot(d2[:, 0], d2[:, 1], color='b', marker='o', ls='-.', label='Given data points')
     plt.grid()
     plt.legend()
     plt.show()
