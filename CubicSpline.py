@@ -171,7 +171,7 @@ if __name__ == '__main__':
             BasisM[m,n] = NE       
         BasisM[-1, -1] = 1
     
-    print(BasisM)
+    #print(BasisM)
     x = solve(BasisM, d2[:,0])
     y = solve(BasisM, d2[:,1])
     knots = np.zeros((len(x), 2))
@@ -180,6 +180,23 @@ if __name__ == '__main__':
         knots[i, 1] = y[i]
     spline = CubicSpline(u, u_vec, d)
     spline2 = CubicSpline(u, u_vec2, knots)
+
+    S = np.zeros(len(u))
+    Nx = np.zeros(len(u))
+    Ny = np.zeros(len(u))
+    for n in range(len(u_vec)-2):
+            for k in range(len(u)):
+                N[k] = basis_function(u[k], u_vec, n, 3)
+                if n == 23 and k == 999:
+                    N[k] = 1
+            plt.plot(u,N)
+            S = S + N
+            Nx = Nx + N*d[n,0]
+            Ny = Ny + N*d[n,1]
+    
+    #print(S)
+    #plt.plot(u,S)
+    plt.show()
    
     #spline.plot()
     plt.plot(spline2.su[0, :], spline2.su[1, :], label='New Spline')
