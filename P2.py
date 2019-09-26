@@ -4,33 +4,34 @@ import numpy as np
 # The optimization problem class. The consctructor takes an objective function f,
 # a grid x, the dimension n, and the opportunity to calculate the gradient as inputs
 #===============================================================================
-# Vi borde skriva om detta så att function går från Rn -> R, enligt slidsen. Men har 
-# mest testat så att jag får ut rätt saker nu i R
 
 class optimizationProblem(object):
     def __init__(self, f, n):
         self.f = f
         self.h = 0.00001
         self.n = n
-          
-    def gradient(self, x):
-        gradient = np.zeros(self.n)
-        for i in range(self.n):
-            x_new = x.copy()
-            x_new[i] = x[i] + self.h
-            gradient[i] = (f(x_new) - f(x))/self.h
-        return gradient
+ 
+      
+    def g(self, x):              # Calculates the gradient of the objective function f, for given 
+        g = np.zeros(n)          # values of x1,..,xn. The vector e represents the indexes where the
+        for i in range(n):       # stepsize, h should be added depending on what partial derivative we want
+            e = np.zeros(n)      # to caclulate
+            e[i] = self.h
+            g[i] = (f(x + e) - f(x))/self.h
+        return g
 
-    def hessian(self, x):
-        hessian = np.zeros((self.n, self.n))
-        for i in range(self.n):
-            for j in range(self.n):
-                x_new1 = x.copy()
-                x_new1[i] = x[i] + self.h
-                x_new2 = x.copy()
-                x_new2[i] = x[i] - self.h
-                hessian[i,j] = 
-        return (f(x + self.h) - 2*f(x) + f(x - self.h))/self.h**2
+    def G(self, x):
+        G = np.zeros((n, n))      # Calculates the hessian matrix of the objective function f for given
+        for i in range(n):        # values of x1,...,xn. The vectors e1 and e2 represents the indexes where
+            for j in range(n):    # the stepsize, h should be added depending on what partial derivative
+                e1 = np.zeros(n)  # we want to calculate
+                e2 = np.zeros(n)
+                e1[i] = self.h
+                e2[j] = self.h
+                G[i,j] = (f(x + e1 + e2) - f(x + e1) - f(x + e2) + f(x))/self.h**2
+                if i != j:        # Symmetrizing step
+                    G[i, j] = G[j, i]
+        return G
         
     
 class BaseMethod(optimizationProblem):
@@ -46,15 +47,10 @@ class BaseMethod(optimizationProblem):
 def f(x):
     return 100*(x[1] - x[0]**2)**2 + (1 - x[0])**2
  
-x1 = np.linspace(0.0, 9.0, 10)
-x2 = np.linspace(0.0, 9.0, 10)
-
-x = np.array(([x1, x2]))
-xx1 = 1.0
-xx2 = 1.0
-
-xx = np.append(xx1, xx2)
-#xx = np.append(x1.T, x2.T)
-opt = optimizationProblem(f, 2)
-print(opt.gradient(xx))
+x1 = 1.0
+x2 = 1.0
+x = np.append(x1, x2)
+n = len(x)
+opt = optimizationProblem(f, n)
+print(opt.g(x), opt.G(x))
 
