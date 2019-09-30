@@ -1,6 +1,8 @@
 import numpy as np
 import scipy.linalg as sp
 import matplotlib.pyplot as plt
+
+
 # ===============================================================================
 # The optimization problem class. The consctructor takes an objective function f,
 # a grid x, the dimension n, and the opportunity to calculate the gradient as inputs
@@ -13,6 +15,18 @@ def check(list1, val):
         # compare with all the values
         # with val
         if x < val:
+            return False
+    return True
+
+
+def compare(bigger_list, smaller_list):
+    print("Bigger list: ", bigger_list)
+    print("Smaller list: ", smaller_list)
+    if len(bigger_list) != len(smaller_list):
+        print("Not comppareable lists!")
+        return False
+    for i in range(len(bigger_list)):
+        if bigger_list[i] < smaller_list[i]:
             return False
     return True
 
@@ -45,7 +59,7 @@ class OptimizationProblem(object):
                 h2[j] = self.h
                 G[i, j] = (f(x + h1 + h2) - f(x + h1) - f(x + h2) + f(x)) / self.h ** 2
                 if i != j:  # Symmetrizing step
-                    #print(G[i, j])
+                    # print(G[i, j])
                     if G[i, j] == 0:
                         G[i, j] = 0.00001
                     G[i, j] = G[j, i]
@@ -56,7 +70,7 @@ class OptimizationProblem(object):
         L = np.linalg.cholesky(G)
         Linv = np.linalg.inv(L)
         self.Ginv = np.dot(Linv, Linv.T)
-    
+
     def posDefCheck(self, x):
         try:
             np.linalg.cholesky(self.G(x))
@@ -68,32 +82,86 @@ class BaseMethods:
     def __init__(self, opt):
         self.opt = opt
 
-    def __call__(self, initial_guess, alpha, type):
+    def __call__(self, type, initial_guess=None, alpha=None):
         if type == 'newton':
             return self.newton(initial_guess, alpha)
+        elif type == 'inexact':
+            return self.newton_inexact(initial_guess)
         else:
             print("Can't find given type.")
 
     def newton(self, x_prev, alpha):
         while 1:
-            print(x_prev)
-            
-            if check(opt.g(x_prev), 10**(-5)):
+            if check(opt.g(x_prev), 10 ** (-5)): #Check is in wrong way????
                 return x_prev
-            print(opt.Ginv)
             opt.posDefCheck(x_prev)
             opt.invG(x_prev)
-            sK = -np.dot(opt.Ginv, opt.g(x_prev))
-            alphaK = opt.f(x_prev +alpha*sK)
-            x_next = x_prev + alphaK * sK
+            s_k = -np.dot(opt.Ginv, opt.g(x_prev))
+            alpha_k = opt.f(x_prev + alpha * s_k)
+            x_next = x_prev + alpha_k * s_k
             x_prev = x_next
-            
 
     def exact_line_search(self):
         pass
 
-    def inexact_line_search(self):
-        pass
+    def f_alpha(self, x_prev, alpha, s_k):
+        return f(x_prev + alpha*s_k)
+
+    def f_prim_alpha(self, x, alpha, s_k):
+        return 200 * (x[1] + alpha*s_k[1] - x[0]**2 + (alpha * s_k[0]) ** 2 + 2*x[0]*alpha*s_k[0]) *(s_k[1] +
+                                    2*alpha*(s_k[0]**2) + 2*x[0]*s_k[0]) + 2*s_k[0] + 2*x[0]*s_k[0] + 2*alpha*s_k[0]
+
+    def extrapolation(self, alpha_zero, alpha_lower, x, s_k):
+        return (alpha_zero - alpha_lower) * (self.f_prim_alpha(x, alpha_zero, s_k) /
+                                    (self.f_prim_alpha(x, alpha_lower, s_k) - self.f_prim_alpha(x, alpha_zero, s_k)))
+
+    def interpolation(self, alpha_zero, alpha_lower, x, s_k):
+        return (alpha_zero - alpha_lower) ** 2 * self.f_prim_alpha(x, alpha_lower, s_k) / \
+               (2 * (self.f_alpha(x, alpha_lower, s_k) - self.f_alpha(x, alpha_zero, s_k)) +
+                (alpha_zero - alpha_lower) * self.f_alpha(x, alpha_lower, s_k))
+
+    def left_con(self, alpha_zero, alpha_lower, x_prev, s_k):
+        sigma = 0.7
+        return self.f_prim_alpha(x_prev, alpha_zero, s_k) >= sigma*self.f_prim_alpha(x_prev, alpha_lower, s_k)
+
+    def right_con(self, alpha_zero, alpha_lower, x_prev, s_k):
+        rho = 0.1
+        return self.f_alpha(x_prev, alpha_lower, s_k) + rho * (alpha_zero - alpha_lower) * \
+            self.f_prim_alpha(x_prev, alpha_lower, s_k) >= self.f_alpha(x_prev, alpha_zero, s_k)
+
+    def inexact_line_search(self, alpha_zero, alpha_lower, alpha_upper, x_prev, s_k):
+        tau = 0.1
+        xi = 9
+        while not self.left_con(alpha_zero, alpha_lower, x_prev, s_k) and \
+                self.right_con(alpha_zero, alpha_lower, x_prev, s_k):
+            if not self.left_con(alpha_zero, alpha_lower, x_prev, s_k):
+                delta_a = self.extrapolation(alpha_zero, alpha_lower, x_prev, s_k)
+                delta_a = max(delta_a, tau*(alpha_zero - alpha_lower))
+                delta_a = min(delta_a, xi * (alpha_zero - alpha_lower))
+                alpha_lower = alpha_zero
+                alpha_zero = alpha_zero + delta_a
+            else:
+                alpha_upper = min(alpha_zero, alpha_upper)
+                alpha_bar = self.interpolation(alpha_zero, alpha_lower, x_prev, s_k)
+                alpha_bar = max(alpha_bar, alpha_lower + tau * (alpha_upper - alpha_lower))
+                alpha_bar = min(alpha_bar, alpha_upper - tau * (alpha_upper - alpha_lower))
+                alpha_zero = alpha_bar
+        return alpha_zero
+
+    def newton_inexact(self, x_prev):
+        alpha_lower = 0.
+        alpha_upper = 10 ** 99
+        alpha_zero = 1. #???????????????????????????
+        while 1:
+            if check(opt.g(x_prev), 10 ** (-5)):
+                return x_prev
+            opt.posDefCheck(x_prev)
+            opt.invG(x_prev)
+            s_k = -np.dot(opt.Ginv, opt.g(x_prev))
+            alpha_zero = self.inexact_line_search(alpha_zero, alpha_lower, alpha_upper, x_prev, s_k)
+            x_next = x_prev + alpha_zero * s_k
+            x_prev = x_next
+
 
 # Testsaker
 
@@ -102,18 +170,13 @@ def f(x):
 
 
 if __name__ == '__main__':
-
-    x1 = 1.1
-    x2 = 1.0
+    x1 = 1.0
+    x2 = 1.1
     x = np.append(x1, x2)
     n = len(x)
     opt = OptimizationProblem(f, n)
-    opt(4)
     #print(opt.g(x), '\n',  opt.G(x))
     bm = BaseMethods(opt)
-    print(bm(x, 0.7, 'newton'))
-
-    
-
-
+    print(bm('newton', x, 0.7))
+    print(bm('inexact', x))
 
