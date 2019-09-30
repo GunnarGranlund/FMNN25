@@ -179,4 +179,18 @@ if __name__ == '__main__':
     bm = BaseMethods(opt)
     print(bm('newton', x, 0.7))
     print(bm('inexact', x))
+    
+    minimum = bm(x, 0.7, 'newton')
+    X, Y = np.meshgrid(np.linspace(-0.5, 2, 1000), np.linspace(-0.5, 4, 1000))
+    Z = f([X,Y])
+    plt.figure(1)
+    plt.contour(X, Y, Z, [0, 0.1, 0.5, 1,2,3,5,10,15,20,50,100, 200,300, 400,
+                          500, 600, 700, 800],
+                colors='black', label='Rosenbrock function')
+    plt.title('Rosenbrock function f(x,y) = 100(y-x^2)^2+(1-x)^2')
+    plt.figure(2)
+    plt.contour(X,Y,Z, [1, 3.831, 14.678, 56.234, 215.443, 825.404],
+                colors='black', label='Finding minimum using Newton method')
+    plt.plot(minimum[0], minimum[1], color='k', marker='o', ls='-.')
+    plt.show()
 
