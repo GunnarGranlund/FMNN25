@@ -95,7 +95,7 @@ class BaseMethods:
         xPx = np.array(())
         xPy = np.array(())
         while 1:
-            if check(opt.g(x_prev), 0.05): #Check is in wrong way????
+            if check(opt.g(x_prev), 0.05):  # Check is in wrong way????
                 return x_prev, xPx, xPy
             opt.posDefCheck(x_prev)
             opt.invG(x_prev)
@@ -113,12 +113,14 @@ class BaseMethods:
         return f(x_prev + alpha * s_k)
 
     def f_prim_alpha(self, x, alpha, s_k):
-        return 200 * (x[1] + alpha*s_k[1] - (x[0] ** 2 + 2 * x[0]*alpha*s_k[0] + (alpha*s_k[0]) ** 2)) *\
-               (s_k[1] - 2*(x[0]*s_k[0] + alpha*(s_k[0] ** 2))) - 2*(s_k[0] + x[0]*s_k[0] + alpha*(s_k[1]**2))
+        return 200 * (x[1] + alpha * s_k[1] - (x[0] ** 2 + 2 * x[0] * alpha * s_k[0] + (alpha * s_k[0]) ** 2)) * \
+               (s_k[1] - 2 * (x[0] * s_k[0] + alpha * (s_k[0] ** 2))) - 2 * (
+                           s_k[0] + x[0] * s_k[0] + alpha * (s_k[1] ** 2))
 
     def extrapolation(self, alpha_zero, alpha_lower, x, s_k):
         return (alpha_zero - alpha_lower) * (self.f_prim_alpha(x, alpha_zero, s_k) /
-                (self.f_prim_alpha(x, alpha_lower, s_k) - self.f_prim_alpha(x, alpha_zero, s_k)))
+                                             (self.f_prim_alpha(x, alpha_lower, s_k) - self.f_prim_alpha(x, alpha_zero,
+                                                                                                         s_k)))
 
     def interpolation(self, alpha_zero, alpha_lower, x, s_k):
         return (alpha_zero - alpha_lower) ** 2 * self.f_prim_alpha(x, alpha_lower, s_k) / \
@@ -168,37 +170,34 @@ class BaseMethods:
             x_prev = x_next
 
 
-# Testsaker
-
 def f(x):
     return 100 * (x[1] - x[0] ** 2) ** 2 + (1 - x[0]) ** 2
 
 
-if __name__ == '__main__':
-    x1 = 0.1
-    x2 = 0.0
-    x = np.append(x1, x2)
-    n = len(x)
-    opt = OptimizationProblem(f, n)
-    # print(opt.g(x), '\n',  opt.G(x))
-    bm = BaseMethods(opt)
-    #print(bm('newton', x, 0.7))
-    #print(bm('inexact', x))
-
-    
+def contour_plot(bm):
     minimum, minix, miniy = bm('newton', x)
     X, Y = np.meshgrid(np.linspace(-0.5, 2, 1000), np.linspace(-0.5, 4, 1000))
-    Z = f([X,Y])
+    Z = f([X, Y])
     plt.figure(1)
-    plt.contour(X, Y, Z, [0, 0.1, 0.5, 1,2,3,5,10,15,20,50,100, 200,300, 400,
-                          500, 600, 700, 800],
-                colors='black')
+    plt.contour(X, Y, Z, [0, 0.1, 0.5, 1, 2, 3, 5, 10, 15, 20, 50, 100, 200, 300, 400,
+                          500, 600, 700, 800], colors='black')
     plt.title('Rosenbrock function f(x,y) = 100(y-x^2)^2+(1-x)^2')
     plt.figure(2)
-    plt.contour(X,Y,Z, [1, 3.831, 14.678, 56.234, 215.443, 825.404],
-                colors='black')
+    plt.contour(X, Y, Z, [1, 3.831, 14.678, 56.234, 215.443, 825.404], colors='black')
     print(minix, miniy)
     print(minimum)
     plt.plot(minix, miniy, color='k', marker='o', ls='-.')
     plt.plot(minimum[0], minimum[1], color='r', marker='o', ls='-.')
     plt.show()
+
+
+if __name__ == '__main__':
+    x1 = 1.1
+    x2 = 1.0
+    x = np.append(x1, x2)
+    n = len(x)
+    opt = OptimizationProblem(f, n)
+    bm = BaseMethods(opt)
+    print(bm('newton', x)[0])
+    #print(bm('inexact', x))
+    contour_plot(bm)
