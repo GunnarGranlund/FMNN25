@@ -142,8 +142,9 @@ class BaseMethods:
             x_py = np.append(x_py, x_prev[1])
             x_prev = x_next
             
-    def update(self, type, x_prev):
-        H_prev = opt.invG(x_prev)
+    def broyden(self, x_prev):
+        opt.invG(x_prev)
+        H_prev = opt.Ginv
         while 1:
             if check(opt.g(x_prev), 10 ** (-5)):
                 return x_prev
@@ -151,20 +152,39 @@ class BaseMethods:
             x_next = x_prev - s_k
             delta_k = x_next - x_prev
             gamma_k = opt.g(x_next) - opt.g(x_prev)
-            if type == 'broyden':
-                u = delta_k - H_prev
-                a = 1/(u.t * gamma_k)
-                H_k = H_prev + a * np.dot(u, u.t)
-            if type == 'DFP':
-                H_k = H_prev + (delta_k * delta_k.t)/(delta_k.t * gamma_k) - \
-                (H_prev * gamma_k * gamma_k.t * H_prev) / (gamma_k.t * H_prev * gamma_k)
-            if type == 'BFGS':
-                H_k = H_prev + (1 + (gamma_k.t * H_prev * gamma_k)/(delta_k.t * gamma_k)) \
-                * (delta_k * delta_k.t)/(delta_k.t * gamma_k) - \
-                (delta_k * gamma_k.t * H_prev + H_prev * gamma_k * delta_k.t)/ \
-                (delta_k.t * gamma_k)
+            u = delta_k - H_prev
+            a = 1/(u.T * gamma_k)
+            H_k = H_prev + a * np.dot(u, u.T)
             H_prev = H_k
             x_prev = x_next
+                      
+    def dfp(self, x_prev):
+        opt.invG(x_prev)
+        H_prev = opt.Ginv
+        while 1:
+            if check(opt.g(x_prev), 10 ** (-5)):
+                return x_prev
+            s_k = np.dot(H_prev, opt.g(x_prev))
+            x_next = x_prev - s_k
+            delta_k = x_next - x_prev
+            gamma_k = opt.g(x_next) - opt.g(x_prev)
+            H_k = H_prev + (delta_k * delta_k.T)/(delta_k.T * gamma_k) - \
+            (H_prev * gamma_k * gamma_k.T * H_prev) / (gamma_k.T * H_prev * gamma_k)
+            
+    def bfgs(self, x_prev):
+        opt.invG(x_prev)
+        H_prev = opt.Ginv
+        while 1:
+            if check(opt.g(x_prev), 10 ** (-5)):
+                return x_prev
+            s_k = np.dot(H_prev, opt.g(x_prev))
+            x_next = x_prev - s_k
+            delta_k = x_next - x_prev
+            gamma_k = opt.g(x_next) - opt.g(x_prev)
+            H_k = H_prev + (1 + (gamma_k.T * H_prev * gamma_k)/(delta_k.T * gamma_k)) \
+            * (delta_k * delta_k.T)/(delta_k.T * gamma_k) - \
+            (delta_k * gamma_k.T * H_prev + H_prev * gamma_k * delta_k.T)/ \
+            (delta_k.T * gamma_k)
 
 def rosenbrock(x):
     return 100 * (x[1] - x[0] ** 2) ** 2 + (1 - x[0]) ** 2
