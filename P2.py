@@ -108,11 +108,10 @@ class BaseMethods:
 
     def f_alpha(self, x_prev, alpha, s_k):
         return f(x_prev + alpha * s_k)
-
-    def f_prim_alpha(self, x, alpha, s_k):
-        return 200 * (x[1] + alpha * s_k[1] - (x[0] ** 2 + 2 * x[0] * alpha * s_k[0] + (alpha * s_k[0]) ** 2)) * \
-               (s_k[1] - 2 * (x[0] * s_k[0] + alpha * (s_k[0] ** 2))) - 2 * (
-                           s_k[0] + x[0] * s_k[0] + alpha * (s_k[1] ** 2))
+    
+    def f_prim_alpha(self, x, alpha, s_k):  
+        e = opt.h
+        return (self.f_alpha(x, alpha + e, s_k) - self.f_alpha(x, alpha, s_k))/opt.h 
 
     def extrapolation(self, alpha_zero, alpha_lower, x, s_k):
         return (alpha_zero - alpha_lower) * (self.f_prim_alpha(x, alpha_zero, s_k) /
@@ -200,5 +199,5 @@ if __name__ == '__main__':
     bm = BaseMethods(opt)
     #print(bm('newton', x)[0])
     #print(bm('inexact', x)[0])
-    contour_plot(bm, 'exact', x)
+    #contour_plot(bm, 'exact', x)
     contour_plot(bm, 'inexact', x)
