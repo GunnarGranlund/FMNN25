@@ -84,30 +84,27 @@ class BaseMethods:
         self.opt = opt
 
     def __call__(self, type, initial_guess=None):
-        if type == 'newton':
-            return self.newton(initial_guess)
+        if type == 'exact':
+            return self.newton_exact(initial_guess)
         elif type == 'inexact':
             return self.newton_inexact(initial_guess)
         else:
             print("Can't find given type.")
 
-    def newton(self, x_prev):
-        xPx = np.array(())
-        xPy = np.array(())
+    def newton_exact(self, x_prev):
+        x_px = np.array(())
+        x_py = np.array(())
         while 1:
             if check(opt.g(x_prev), 0.05):  # Check is in wrong way????
-                return x_prev, xPx, xPy
+                return x_prev, x_px, x_py
             opt.posDefCheck(x_prev)
             opt.invG(x_prev)
             s_k = -np.dot(opt.Ginv, opt.g(x_prev))
             alpha_k = op.fmin(self.f_alpha, 1, (x_prev, s_k), disp=0)
             x_next = x_prev + alpha_k * s_k
-            xPx = np.append(xPx, x_prev[0])
-            xPy = np.append(xPy, x_prev[1])
+            x_px = np.append(x_px, x_prev[0])
+            x_py = np.append(x_py, x_prev[1])
             x_prev = x_next
-
-    def exact_line_search(self):
-        pass
 
     def f_alpha(self, x_prev, alpha, s_k):
         return f(x_prev + alpha * s_k)
@@ -119,8 +116,7 @@ class BaseMethods:
 
     def extrapolation(self, alpha_zero, alpha_lower, x, s_k):
         return (alpha_zero - alpha_lower) * (self.f_prim_alpha(x, alpha_zero, s_k) /
-                                             (self.f_prim_alpha(x, alpha_lower, s_k) - self.f_prim_alpha(x, alpha_zero,
-                                                                                                         s_k)))
+                                    (self.f_prim_alpha(x, alpha_lower, s_k) - self.f_prim_alpha(x, alpha_zero, s_k)))
 
     def interpolation(self, alpha_zero, alpha_lower, x, s_k):
         return (alpha_zero - alpha_lower) ** 2 * self.f_prim_alpha(x, alpha_lower, s_k) / \
@@ -159,14 +155,18 @@ class BaseMethods:
         alpha_lower = 0.
         alpha_upper = 10 ** 99
         alpha_zero = 1.  # ???????????????????????????
+        x_px = np.array(())
+        x_py = np.array(())
         while 1:
             if check(opt.g(x_prev), 0.05):
-                return x_prev
+                return x_prev, x_px, x_py
             opt.posDefCheck(x_prev)
             opt.invG(x_prev)
             s_k = -np.dot(opt.Ginv, opt.g(x_prev))
             alpha_zero = self.inexact_line_search(alpha_zero, alpha_lower, alpha_upper, x_prev, s_k)
             x_next = x_prev + alpha_zero * s_k
+            x_px = np.append(x_px, x_prev[0])
+            x_py = np.append(x_py, x_prev[1])
             x_prev = x_next
 
 
@@ -174,14 +174,14 @@ def f(x):
     return 100 * (x[1] - x[0] ** 2) ** 2 + (1 - x[0]) ** 2
 
 
-def contour_plot(bm):
-    minimum, minix, miniy = bm('newton', x)
+def contour_plot(bm, type, x):
+    minimum, minix, miniy = bm(type, x)
     X, Y = np.meshgrid(np.linspace(-0.5, 2, 1000), np.linspace(-0.5, 4, 1000))
     Z = f([X, Y])
-    plt.figure(1)
+    """plt.figure(1)
     plt.contour(X, Y, Z, [0, 0.1, 0.5, 1, 2, 3, 5, 10, 15, 20, 50, 100, 200, 300, 400,
                           500, 600, 700, 800], colors='black')
-    plt.title('Rosenbrock function f(x,y) = 100(y-x^2)^2+(1-x)^2')
+    plt.title('Rosenbrock function f(x,y) = 100(y-x^2)^2+(1-x)^2')"""
     plt.figure(2)
     plt.contour(X, Y, Z, [1, 3.831, 14.678, 56.234, 215.443, 825.404], colors='black')
     print(minix, miniy)
@@ -192,12 +192,13 @@ def contour_plot(bm):
 
 
 if __name__ == '__main__':
-    x1 = 1.1
-    x2 = 1.0
+    x1 = 1.0
+    x2 = 1.1
     x = np.append(x1, x2)
     n = len(x)
     opt = OptimizationProblem(f, n)
     bm = BaseMethods(opt)
-    print(bm('newton', x)[0])
-    #print(bm('inexact', x))
-    contour_plot(bm)
+    #print(bm('newton', x)[0])
+    #print(bm('inexact', x)[0])
+    contour_plot(bm, 'exact', x)
+    contour_plot(bm, 'inexact', x)
