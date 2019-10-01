@@ -14,7 +14,7 @@ def check(list1, val):
     for x in list1:
         # compare with all the values
         # with val
-        if abs(x) > val:
+        if x < val:
             return False
     return True
 
@@ -91,29 +91,33 @@ class BaseMethods:
             print("Can't find given type.")
 
     def newton(self, x_prev, alpha):
+        xPx = np.array(())
+        xPy = np.array(())
         while 1:
-            if check(opt.g(x_prev), 0.05):  # Check is in wrong way????
-                return x_prev
+            if check(opt.g(x_prev), 10 ** (-5)): #Check is in wrong way????
+                return x_prev, xPx, xPy
             opt.posDefCheck(x_prev)
             opt.invG(x_prev)
             s_k = -np.dot(opt.Ginv, opt.g(x_prev))
             alpha_k = opt.f(x_prev + alpha * s_k)
             x_next = x_prev + alpha_k * s_k
+            xPx = np.append(xPx, x_prev[0])
+            xPy = np.append(xPy, x_prev[1])
             x_prev = x_next
 
     def exact_line_search(self):
         pass
 
     def f_alpha(self, x_prev, alpha, s_k):
-        return f(x_prev + alpha * s_k)
+        return f(x_prev + alpha*s_k)
 
     def f_prim_alpha(self, x, alpha, s_k):
-        return 200 * (x[1] + alpha*s_k[1] - (x[0] ** 2 + 2 * x[0]*alpha*s_k[0] + (alpha*s_k[0]) ** 2)) *\
-               (s_k[1] - 2*(x[0]*s_k[0] + alpha*(s_k[0] ** 2))) - 2*(s_k[0] + x[0]*s_k[0] + alpha*(s_k[1]**2))
+        return 200 * (x[1] + alpha*s_k[1] - x[0]**2 + (alpha * s_k[0]) ** 2 + 2*x[0]*alpha*s_k[0]) *(s_k[1] +
+                                    2*alpha*(s_k[0]**2) + 2*x[0]*s_k[0]) + 2*s_k[0] + 2*x[0]*s_k[0] + 2*alpha*s_k[0]
 
     def extrapolation(self, alpha_zero, alpha_lower, x, s_k):
         return (alpha_zero - alpha_lower) * (self.f_prim_alpha(x, alpha_zero, s_k) /
-                (self.f_prim_alpha(x, alpha_lower, s_k) - self.f_prim_alpha(x, alpha_zero, s_k)))
+                                    (self.f_prim_alpha(x, alpha_lower, s_k) - self.f_prim_alpha(x, alpha_zero, s_k)))
 
     def interpolation(self, alpha_zero, alpha_lower, x, s_k):
         return (alpha_zero - alpha_lower) ** 2 * self.f_prim_alpha(x, alpha_lower, s_k) / \
@@ -122,12 +126,12 @@ class BaseMethods:
 
     def left_con(self, alpha_zero, alpha_lower, x_prev, s_k):
         sigma = 0.7
-        return self.f_prim_alpha(x_prev, alpha_zero, s_k) >= sigma * self.f_prim_alpha(x_prev, alpha_lower, s_k)
+        return self.f_prim_alpha(x_prev, alpha_zero, s_k) >= sigma*self.f_prim_alpha(x_prev, alpha_lower, s_k)
 
     def right_con(self, alpha_zero, alpha_lower, x_prev, s_k):
         rho = 0.1
         return self.f_alpha(x_prev, alpha_lower, s_k) + rho * (alpha_zero - alpha_lower) * \
-               self.f_prim_alpha(x_prev, alpha_lower, s_k) >= self.f_alpha(x_prev, alpha_zero, s_k)
+            self.f_prim_alpha(x_prev, alpha_lower, s_k) >= self.f_alpha(x_prev, alpha_zero, s_k)
 
     def inexact_line_search(self, alpha_zero, alpha_lower, alpha_upper, x_prev, s_k):
         tau = 0.1
@@ -136,7 +140,7 @@ class BaseMethods:
                 self.right_con(alpha_zero, alpha_lower, x_prev, s_k):
             if not self.left_con(alpha_zero, alpha_lower, x_prev, s_k):
                 delta_a = self.extrapolation(alpha_zero, alpha_lower, x_prev, s_k)
-                delta_a = max(delta_a, tau * (alpha_zero - alpha_lower))
+                delta_a = max(delta_a, tau*(alpha_zero - alpha_lower))
                 delta_a = min(delta_a, xi * (alpha_zero - alpha_lower))
                 alpha_lower = alpha_zero
                 alpha_zero = alpha_zero + delta_a
@@ -151,9 +155,9 @@ class BaseMethods:
     def newton_inexact(self, x_prev):
         alpha_lower = 0.
         alpha_upper = 10 ** 99
-        alpha_zero = 1.  # ???????????????????????????
+        alpha_zero = 1. #???????????????????????????
         while 1:
-            if check(opt.g(x_prev), 0.05):
+            if check(opt.g(x_prev), 10 ** (-5)):
                 return x_prev
             opt.posDefCheck(x_prev)
             opt.invG(x_prev)
@@ -170,27 +174,28 @@ def f(x):
 
 
 if __name__ == '__main__':
-    x1 = 1.0
-    x2 = 1.1
+    x1 = 1.1
+    x2 = 1.0
     x = np.append(x1, x2)
     n = len(x)
     opt = OptimizationProblem(f, n)
-    # print(opt.g(x), '\n',  opt.G(x))
+    #print(opt.g(x), '\n',  opt.G(x))
     bm = BaseMethods(opt)
     print(bm('newton', x, 0.7))
     print(bm('inexact', x))
-
-    """
-    minimum = bm( 'newton', x, 0.7)
+    
+    minimum, minix, miniy = bm('newton', x, 0.7)
     X, Y = np.meshgrid(np.linspace(-0.5, 2, 1000), np.linspace(-0.5, 4, 1000))
-    Z = f([X, Y])
+    Z = f([X,Y])
     plt.figure(1)
-    plt.contour(X, Y, Z, [0, 0.1, 0.5, 1, 2, 3, 5, 10, 15, 20, 50, 100, 200, 300, 400,
+    plt.contour(X, Y, Z, [0, 0.1, 0.5, 1,2,3,5,10,15,20,50,100, 200,300, 400,
                           500, 600, 700, 800],
-                colors='black', label='Rosenbrock function')
+                colors='black')
     plt.title('Rosenbrock function f(x,y) = 100(y-x^2)^2+(1-x)^2')
     plt.figure(2)
-    plt.contour(X, Y, Z, [1, 3.831, 14.678, 56.234, 215.443, 825.404],
-                colors='black', label='Finding minimum using Newton method')
-    plt.plot(minimum[0], minimum[1], color='k', marker='o', ls='-.')
-    plt.show()"""
+    plt.contour(X,Y,Z, [1, 3.831, 14.678, 56.234, 215.443, 825.404],
+                colors='black')
+    print(minix, miniy)
+    plt.plot(minix, miniy, color='k', marker='o', ls='-.')
+    plt.plot(minimum[0], minimum[1], color='r', marker='o', ls='-.')
+    plt.show()
