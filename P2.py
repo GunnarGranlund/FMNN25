@@ -147,10 +147,10 @@ def rosenbrock(x):
     return 100 * (x[1] - x[0] ** 2) ** 2 + (1 - x[0]) ** 2
 
 
-def contour_plot(bm, type, x):
+def contour_plot(bm, type, x, function):
     minimum, minix, miniy = bm(type, x)
     X, Y = np.meshgrid(np.linspace(-0.5, 2, 1000), np.linspace(-0.5, 4, 1000))
-    Z = rosenbrock([X, Y])
+    Z = function([X, Y])
     """plt.figure(1)
     plt.contour(X, Y, Z, [0, 0.1, 0.5, 1, 2, 3, 5, 10, 15, 20, 50, 100, 200, 300, 400,
                           500, 600, 700, 800], colors='black')
@@ -165,16 +165,16 @@ def contour_plot(bm, type, x):
 
 
 if __name__ == '__main__':
-    x1 = 1.0
-    x2 = 1.1
+    x1 = 0.6
+    x2 = 0.5
     x = np.append(x1, x2)
     n = len(x)
     opt = OptimizationProblem(rosenbrock, n)
     bm = BaseMethods(opt)
     print(bm('exact', x)[0])
-    print(bm('inexact', x)[0])
-    #contour_plot(bm, 'exact', x)
-    #contour_plot(bm, 'inexact', x)
+    #print(bm('inexact', x)[0])
+    contour_plot(bm, 'exact', x, rosenbrock)
+    #contour_plot(bm, 'inexact', x, rosenbrock)
     #opt2 = OptimizationProblem(chebyquad, n)
     #bm2 = BaseMethods(opt2)
-    #contour_plot(bm2, 'exact', x)
+    #contour_plot(bm2, 'exact', x, chebyquad)
