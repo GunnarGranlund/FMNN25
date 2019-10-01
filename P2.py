@@ -143,10 +143,9 @@ class BaseMethods:
             x_prev = x_next
             
     def broyden(self, x_prev):
-        opt.invG(x_prev)
-        H_prev = opt.Ginv
+        H_prev = self.optimizer.Ginv
         while 1:
-            if check(opt.g(x_prev), 10 ** (-5)):
+            if check(self.optimizer.g(x_prev), 0.05):
                 return x_prev
             s_k = np.dot(H_prev, opt.g(x_prev))
             x_next = x_prev - s_k
@@ -159,10 +158,9 @@ class BaseMethods:
             x_prev = x_next
                       
     def dfp(self, x_prev):
-        opt.invG(x_prev)
-        H_prev = opt.Ginv
+        H_prev = self.optimizer.Ginv
         while 1:
-            if check(opt.g(x_prev), 10 ** (-5)):
+            if check(self.optimizer.g(x_prev), 0.05):
                 return x_prev
             s_k = np.dot(H_prev, opt.g(x_prev))
             x_next = x_prev - s_k
@@ -172,10 +170,9 @@ class BaseMethods:
             (H_prev * gamma_k * gamma_k.T * H_prev) / (gamma_k.T * H_prev * gamma_k)
             
     def bfgs(self, x_prev):
-        opt.invG(x_prev)
-        H_prev = opt.Ginv
+        H_prev = self.optimizer.Ginv
         while 1:
-            if check(opt.g(x_prev), 10 ** (-5)):
+            if check(self.optimizer.g(x_prev), 0.05):
                 return x_prev
             s_k = np.dot(H_prev, opt.g(x_prev))
             x_next = x_prev - s_k
