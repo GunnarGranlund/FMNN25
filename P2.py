@@ -71,13 +71,8 @@ class BaseMethods:
     def __init__(self, optimizer):
         self.optimizer = optimizer
 
-    def __call__(self, type, initial_guess=None):
-        if type == 'exact':
-            return self.newton_exact(initial_guess)
-        elif type == 'inexact':
-            return self.newton_inexact(initial_guess)
-        else:
-            print("Can't find given type.")
+    def __call__(self, type, initial_guess):
+        return self.newton(type, initial_guess)
 
     def f_alpha(self, x_prev, alpha, s_k):
         return self.optimizer.f(x_prev + alpha * s_k)
@@ -102,22 +97,7 @@ class BaseMethods:
     def right_con(self, alpha_zero, alpha_lower, x_prev, s_k):
         rho = 0.1
         return self.f_alpha(x_prev, alpha_lower, s_k) + rho * (alpha_zero - alpha_lower) * \
-               self.f_prim_alpha(x_prev, alpha_lower, s_k) >= self.f_alpha(x_prev, alpha_zero, s_k)
-
-    def newton_exact(self, x_prev):
-        x_px = np.array(())
-        x_py = np.array(())
-        while 1:
-            if check(self.optimizer.g(x_prev), 0.05):  # Check is in wrong way????
-                return x_prev, x_px, x_py
-            self.optimizer.posDefCheck(x_prev)
-            self.optimizer.invG(x_prev)
-            s_k = -np.dot(self.optimizer.Ginv, self.optimizer.g(x_prev))
-            alpha_k = op.fmin(self.f_alpha, 1, (x_prev, s_k), disp=0)
-            x_next = x_prev + alpha_k * s_k
-            x_px = np.append(x_px, x_prev[0])
-            x_py = np.append(x_py, x_prev[1])
-            x_prev = x_next
+            self.f_prim_alpha(x_prev, alpha_lower, s_k) >= self.f_alpha(x_prev, alpha_zero, s_k)
 
     def inexact_line_search(self, alpha_zero, alpha_lower, alpha_upper, x_prev, s_k):
         tau = 0.1
@@ -138,10 +118,10 @@ class BaseMethods:
                 alpha_zero = alpha_bar
         return alpha_zero
 
-    def newton_inexact(self, x_prev):
+    def newton(self, type, x_prev):
         alpha_lower = 0.
         alpha_upper = 10 ** 99
-        alpha_zero = 1.  # ???????????????????????????
+        alpha_zero = 1.
         x_px = np.array(())
         x_py = np.array(())
         while 1:
@@ -150,7 +130,13 @@ class BaseMethods:
             self.optimizer.posDefCheck(x_prev)
             self.optimizer.invG(x_prev)
             s_k = -np.dot(self.optimizer.Ginv, self.optimizer.g(x_prev))
-            alpha_zero = self.inexact_line_search(alpha_zero, alpha_lower, alpha_upper, x_prev, s_k)
+            if type == 'exact':
+                alpha_zero = op.fmin(self.f_alpha, 1, (x_prev, s_k), disp=0)
+            elif type == 'inexact':
+                alpha_zero = self.inexact_line_search(alpha_zero, alpha_lower, alpha_upper, x_prev, s_k)
+            else:
+                print("No known type.")
+                return
             x_next = x_prev + alpha_zero * s_k
             x_px = np.append(x_px, x_prev[0])
             x_py = np.append(x_py, x_prev[1])
@@ -179,16 +165,16 @@ def contour_plot(bm, type, x):
 
 
 if __name__ == '__main__':
-    x1 = 0.6
-    x2 = 0.8
+    x1 = 1.0
+    x2 = 1.1
     x = np.append(x1, x2)
     n = len(x)
-    #opt = OptimizationProblem(rosenbrock, n)
-    #bm = BaseMethods(opt)
-    #print(bm('newton', x)[0])
-    #print(bm('inexact', x)[0])
+    opt = OptimizationProblem(rosenbrock, n)
+    bm = BaseMethods(opt)
+    print(bm('exact', x)[0])
+    print(bm('inexact', x)[0])
     #contour_plot(bm, 'exact', x)
     #contour_plot(bm, 'inexact', x)
-    opt2 = OptimizationProblem(chebyquad, n)
-    bm2 = BaseMethods(opt2)
-    contour_plot(bm2, 'exact', x)
+    #opt2 = OptimizationProblem(chebyquad, n)
+    #bm2 = BaseMethods(opt2)
+    #contour_plot(bm2, 'exact', x)
