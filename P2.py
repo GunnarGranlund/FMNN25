@@ -72,7 +72,14 @@ class BaseMethods:
         self.optimizer = optimizer
 
     def __call__(self, type, initial_guess):
-        return self.newton(type, initial_guess)
+        if type == 'broyden':
+            return self.broyden(initial_guess)
+        if type == 'dfp':
+            return self.dfp(initial_guess)
+        if type == 'bfgs':
+            return self.bfgs(initial_guess)
+        else:
+            return self.newton(type, initial_guess)
 
     def f_alpha(self, x_prev, alpha, s_k):
         return self.optimizer.f(x_prev + alpha * s_k)
@@ -143,45 +150,55 @@ class BaseMethods:
             x_prev = x_next
             
     def broyden(self, x_prev):
+        self.optimizer.invG(x_prev)
         H_prev = self.optimizer.Ginv
         while 1:
             if check(self.optimizer.g(x_prev), 0.05):
                 return x_prev
-            s_k = np.dot(H_prev, opt.g(x_prev))
+            s_k = np.dot(H_prev, self.optimizer.g(x_prev))
             x_next = x_prev - s_k
             delta_k = x_next - x_prev
-            gamma_k = opt.g(x_next) - opt.g(x_prev)
-            u = delta_k - H_prev
-            a = 1/(u.T * gamma_k)
-            H_k = H_prev + a * np.dot(u, u.T)
+            gamma_k = self.optimizer.g(x_next) - self.optimizer.g(x_prev)
+            u = delta_k - np.dot(H_prev, gamma_k)
+            a = 1/(np.dot(u.T , gamma_k))
+            print(np.dot(H_prev, gamma_k))
+            H_k = H_prev + np.dot(a , np.dot(u, u.T))
             H_prev = H_k
             x_prev = x_next
                       
     def dfp(self, x_prev):
+        self.optimizer.invG(x_prev)
         H_prev = self.optimizer.Ginv
         while 1:
             if check(self.optimizer.g(x_prev), 0.05):
                 return x_prev
-            s_k = np.dot(H_prev, opt.g(x_prev))
+            s_k = np.dot(H_prev, self.optimizer.g(x_prev))
             x_next = x_prev - s_k
             delta_k = x_next - x_prev
-            gamma_k = opt.g(x_next) - opt.g(x_prev)
-            H_k = H_prev + (delta_k * delta_k.T)/(delta_k.T * gamma_k) - \
-            (H_prev * gamma_k * gamma_k.T * H_prev) / (gamma_k.T * H_prev * gamma_k)
+            gamma_k = self.optimizer.g(x_next) - self.optimizer.g(x_prev)
+            H_k = H_prev + (np.dot(delta_k, delta_k.T))/(np.dot(delta_k.T, gamma_k)) - \
+            (np.dot(H_prev, np.dot(gamma_k, np.dot(gamma_k.T, H_prev)))) / \
+            (np.dot(gamma_k.T, np.dot(H_prev, gamma_k)))
+            H_prev = H_k
+            x_prev = x_next
             
     def bfgs(self, x_prev):
+        self.optimizer.invG(x_prev)
         H_prev = self.optimizer.Ginv
         while 1:
             if check(self.optimizer.g(x_prev), 0.05):
                 return x_prev
-            s_k = np.dot(H_prev, opt.g(x_prev))
+            s_k = np.dot(H_prev, self.optimizer.g(x_prev))
             x_next = x_prev - s_k
             delta_k = x_next - x_prev
-            gamma_k = opt.g(x_next) - opt.g(x_prev)
-            H_k = H_prev + (1 + (gamma_k.T * H_prev * gamma_k)/(delta_k.T * gamma_k)) \
-            * (delta_k * delta_k.T)/(delta_k.T * gamma_k) - \
-            (delta_k * gamma_k.T * H_prev + H_prev * gamma_k * delta_k.T)/ \
-            (delta_k.T * gamma_k)
+            gamma_k = self.optimizer.g(x_next) - self.optimizer.g(x_prev)
+            H_k = H_prev + (1 + (np.dot(gamma_k.T, np.dot(H_prev, gamma_k))/ \
+            np.dot(delta_k.T, gamma_k))) * \
+            (np.dot(delta_k, delta_k.T))/np.dot(delta_k.T, gamma_k) - \
+            (np.dot(delta_k, np.dot(gamma_k.T, H_prev)) + np.dot(H_prev, np.dot(gamma_k, delta_k.T)))/ \
+            (np.dot(delta_k.T, gamma_k))
+            H_prev = H_k
+            x_prev = x_next
 
 def rosenbrock(x):
     return 100 * (x[1] - x[0] ** 2) ** 2 + (1 - x[0]) ** 2
