@@ -95,48 +95,58 @@ class BaseMethods:
             x_py = np.append(x_py, x_prev[1])
             x_prev = x_next
 
-    def broyden(self, x_prev):
-        self.optimizer.invG(x_prev)
-        H_prev = self.optimizer.Ginv
+    def broyden(self, x_k):
+        self.optimizer.invG(x_k)
+        H_k_minus1 = self.optimizer.Ginv
+        x_px = np.array(())
+        x_py = np.array(())
+        x_k_minus1 = x_k -1.
         while 1:
-            print(self.optimizer.g(x_prev))
-            if check(self.optimizer.g(x_prev), 0.05):
-                return x_prev
-            s_k = - np.dot(H_prev, self.optimizer.g(x_prev))
-            x_next = x_prev - s_k
-            delta_k = x_next - x_prev
-            gamma_k = self.optimizer.g(x_next) - self.optimizer.g(x_prev)
-            u = delta_k - np.dot(H_prev, gamma_k)
-            if np.dot(u.T, gamma_k) == 0:
-                print("multi is zero!", x_next, x_prev, self.optimizer.g(x_next), self.optimizer.g(x_prev))
-                return
+            if check(self.optimizer.g(x_k), 0.05):
+                return x_k, x_px, x_py
+            delta_k = x_k - x_k_minus1
+            gamma_k = self.optimizer.g(x_k) - self.optimizer.g(x_k_minus1)
+            u = delta_k - np.dot(H_k_minus1, gamma_k)
             a = 1 / (np.dot(u.T, gamma_k))
-            H_k = H_prev + np.dot(a, np.dot(u, u.T))
-            H_prev = H_k
-            x_prev = x_next
+            H_k = H_k_minus1 + np.dot(a, np.dot(u, u.T))
+            s_k = - np.dot(H_k, self.optimizer.g(x_k))
+            x_next = x_k + s_k
+            H_k_minus1 = H_k
+            x_px = np.append(x_px, x_next[0])
+            x_py = np.append(x_py, x_next[1])
+            x_k_minus1 = x_k
+            x_k = x_next
 
-    def dfp(self, x_prev):
-        self.optimizer.invG(x_prev)
-        H_prev = self.optimizer.Ginv
+    def dfp(self, x_k):
+        self.optimizer.invG(x_k)
+        H_k = self.optimizer.Ginv
+        x_px = np.array(())
+        x_py = np.array(())
+        x_k_minus1 = x_k -1.
         while 1:
-            if check(self.optimizer.g(x_prev), 0.05):
-                return x_prev
-            s_k = np.dot(H_prev, self.optimizer.g(x_prev))
-            x_next = x_prev - s_k
-            delta_k = x_next - x_prev
-            gamma_k = self.optimizer.g(x_next) - self.optimizer.g(x_prev)
-            H_k = H_prev + (np.dot(delta_k, delta_k.T)) / (np.dot(delta_k.T, gamma_k)) - \
-                  (np.dot(H_prev, np.dot(gamma_k, np.dot(gamma_k.T, H_prev)))) / \
-                  (np.dot(gamma_k.T, np.dot(H_prev, gamma_k)))
-            H_prev = H_k
-            x_prev = x_next
+            if check(self.optimizer.g(x_k), 0.05):
+                return x_k, x_px, x_py
+            s_k = - np.dot(H_k, self.optimizer.g(x_k))
+            x_next = x_k + s_k
+            delta_k = x_k - x_k_minus1
+            gamma_k = self.optimizer.g(x_k) - self.optimizer.g(x_k_minus1)
+            H_next = H_k + (np.dot(delta_k, delta_k.T)) / (np.dot(delta_k.T, gamma_k)) - \
+                  (np.dot(H_k, np.dot(gamma_k, np.dot(gamma_k.T, H_k)))) / \
+                  (np.dot(gamma_k.T, np.dot(H_k, gamma_k)))
+            H_k = H_next
+            x_px = np.append(x_px, x_next[0])
+            x_py = np.append(x_py, x_next[1])
+            x_k_minus1 = x_k
+            x_k = x_next
 
     def bfgs(self, x_prev):
         self.optimizer.invG(x_prev)
         H_prev = self.optimizer.Ginv
+        x_px = np.array(())
+        x_py = np.array(())
         while 1:
             if check(self.optimizer.g(x_prev), 0.05):
-                return x_prev
+                return x_prev, x_px, x_py
             s_k = np.dot(H_prev, self.optimizer.g(x_prev))
             x_next = x_prev - s_k
             delta_k = x_next - x_prev
@@ -146,5 +156,6 @@ class BaseMethods:
                   (np.dot(delta_k, np.dot(gamma_k.T, H_prev)) + np.dot(H_prev, np.dot(gamma_k, delta_k.T))) / \
                   (np.dot(delta_k.T, gamma_k))
             H_prev = H_k
+            x_px = np.append(x_px, x_prev[0])
+            x_py = np.append(x_py, x_prev[1])
             x_prev = x_next
-            print(x_prev)
