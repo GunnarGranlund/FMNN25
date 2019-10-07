@@ -16,15 +16,8 @@ class BaseMethods:
     def __init__(self, optimizer):
         self.optimizer = optimizer
 
-    def __call__(self, type, initial_guess):
-        if type == 'broyden':
-            return self.broyden(initial_guess)
-        if type == 'dfp':
-            return self.dfp(initial_guess)
-        if type == 'bfgs':
-            return self.bfgs(initial_guess)
-        else:
-            return self.newton(type, initial_guess)
+    def __call__(self, initial_guess, alpha_type=None, hessian_type=None):
+            return self.newton(initial_guess, alpha_type, hessian_type)
 
     def f_alpha(self, x_prev, alpha, s_k):
         return self.optimizer.f(x_prev + alpha * s_k)
@@ -35,8 +28,7 @@ class BaseMethods:
 
     def extrapolation(self, alpha_zero, alpha_lower, x, s_k):
         return (alpha_zero - alpha_lower) * (self.f_prim_alpha(x, alpha_zero, s_k) /
-                                             (self.f_prim_alpha(x, alpha_lower, s_k) - self.f_prim_alpha(x, alpha_zero,
-                                                                                                         s_k)))
+                (self.f_prim_alpha(x, alpha_lower, s_k) - self.f_prim_alpha(x, alpha_zero, s_k)))
 
     def interpolation(self, alpha_zero, alpha_lower, x, s_k):
         return (alpha_zero - alpha_lower) ** 2 * self.f_prim_alpha(x, alpha_lower, s_k) / \
@@ -71,91 +63,59 @@ class BaseMethods:
                 alpha_zero = alpha_bar
         return alpha_zero
 
-    def newton(self, type, x_prev):
+    def newton(self, x_prev, alpha_type, hessian_type):
         alpha_lower = 0.
         alpha_upper = 10 ** 99
         alpha_zero = 1.
         x_px = np.array(())
         x_py = np.array(())
+        self.optimizer.invG(x_prev)
         while 1:
-            if check(self.optimizer.g(x_prev), 0.05):
+            s_k = - np.dot(self.optimizer.Ginv, self.optimizer.g(x_prev))
+            if check(self.optimizer.g(x_prev), 0.05) :
                 return x_prev, x_px, x_py
-            self.optimizer.posDefCheck(x_prev)
-            self.optimizer.invG(x_prev)
-            s_k = -np.dot(self.optimizer.Ginv, self.optimizer.g(x_prev))
-            if type == 'exact':
-                alpha_zero = op.fmin(self.f_alpha, 1, (x_prev, s_k), disp=False)
-            elif type == 'inexact':
+            if alpha_type == 'exact':
+                alpha_zero = op.fmin(self.f_alpha, 1, (x_prev, s_k), disp=0)
+            elif alpha_type == 'inexact':
                 alpha_zero = self.inexact_line_search(alpha_zero, alpha_lower, alpha_upper, x_prev, s_k)
             else:
-                print("No known type.")
+                print("No known alpha type.")
                 return
             x_next = x_prev + alpha_zero * s_k
+            if hessian_type == 'bfgs':
+                self.optimizer.Ginv = self.bfgs(x_prev, x_next)
+            if hessian_type == 'broyden':
+                self.optimizer.Ginv = self.broyden(x_prev, x_next)
+            if hessian_type == 'dfp':
+                self.optimizer.Ginv = self.dfp(x_prev, x_next)
+            else:
+                self.optimizer.posDefCheck(x_prev)
+                self.optimizer.invG(x_prev)
+            
             x_px = np.append(x_px, x_prev[0])
             x_py = np.append(x_py, x_prev[1])
+            print(x_prev)
             x_prev = x_next
 
-    def broyden(self, x_k):
-        self.optimizer.invG(x_k)
-        H_k_minus1 = self.optimizer.Ginv
-        x_px = np.array(())
-        x_py = np.array(())
-        x_k_minus1 = x_k -1.
-        while 1:
-            if check(self.optimizer.g(x_k), 0.05):
-                return x_k, x_px, x_py
-            delta_k = x_k - x_k_minus1
-            gamma_k = self.optimizer.g(x_k) - self.optimizer.g(x_k_minus1)
-            u = delta_k - np.dot(H_k_minus1, gamma_k)
-            a = 1 / (np.dot(u.T, gamma_k))
-            H_k = H_k_minus1 + np.dot(a, np.dot(u, u.T))
-            s_k = - np.dot(H_k, self.optimizer.g(x_k))
-            x_next = x_k + s_k
-            H_k_minus1 = H_k
-            x_px = np.append(x_px, x_next[0])
-            x_py = np.append(x_py, x_next[1])
-            x_k_minus1 = x_k
-            x_k = x_next
+    def broyden(self, x_prev, x_next):
+        delta_k = x_next - x_prev
+        gamma_k = self.optimizer.g(x_next) - self.optimizer.g(x_prev)
+        u = delta_k - np.dot(self.optimizer.Ginv, gamma_k)
+        a = 1 / (np.dot(u.T, gamma_k))
+        return self.optimizer.Ginv + np.dot(a, np.dot(u, u.T))
 
-    def dfp(self, x_k):
-        self.optimizer.invG(x_k)
-        H_k = self.optimizer.Ginv
-        x_px = np.array(())
-        x_py = np.array(())
-        x_k_minus1 = x_k -1.
-        while 1:
-            if check(self.optimizer.g(x_k), 0.05):
-                return x_k, x_px, x_py
-            s_k = - np.dot(H_k, self.optimizer.g(x_k))
-            x_next = x_k + s_k
-            delta_k = x_k - x_k_minus1
-            gamma_k = self.optimizer.g(x_k) - self.optimizer.g(x_k_minus1)
-            H_next = H_k + (np.dot(delta_k, delta_k.T)) / (np.dot(delta_k.T, gamma_k)) - \
-                  (np.dot(H_k, np.dot(gamma_k, np.dot(gamma_k.T, H_k)))) / \
-                  (np.dot(gamma_k.T, np.dot(H_k, gamma_k)))
-            H_k = H_next
-            x_px = np.append(x_px, x_next[0])
-            x_py = np.append(x_py, x_next[1])
-            x_k_minus1 = x_k
-            x_k = x_next
+    def dfp(self, x_prev, x_next):
+        delta_k = x_next - x_prev
+        gamma_k = self.optimizer.g(x_next) - self.optimizer.g(x_prev)
+        return self.optimizer.Ginv + (np.dot(delta_k, delta_k.T)) / (np.dot(delta_k.T, gamma_k)) - \
+                (np.dot(self.optimizer.Ginv, np.dot(gamma_k, np.dot(gamma_k.T, self.optimizer.Ginv)))) / \
+                (np.dot(gamma_k.T, np.dot(self.optimizer.Ginv, gamma_k)))
 
-    def bfgs(self, x_prev):
-        self.optimizer.invG(x_prev)
-        H_prev = self.optimizer.Ginv
-        x_px = np.array(())
-        x_py = np.array(())
-        while 1:
-            if check(self.optimizer.g(x_prev), 0.05):
-                return x_prev, x_px, x_py
-            s_k = np.dot(H_prev, self.optimizer.g(x_prev))
-            x_next = x_prev - s_k
-            delta_k = x_next - x_prev
-            gamma_k = self.optimizer.g(x_next) - self.optimizer.g(x_prev)
-            H_k = H_prev + (1 + (np.dot(gamma_k.T, np.dot(H_prev, gamma_k)) / np.dot(delta_k.T, gamma_k))) * \
-                  (np.dot(delta_k, delta_k.T)) / np.dot(delta_k.T, gamma_k) - \
-                  (np.dot(delta_k, np.dot(gamma_k.T, H_prev)) + np.dot(H_prev, np.dot(gamma_k, delta_k.T))) / \
-                  (np.dot(delta_k.T, gamma_k))
-            H_prev = H_k
-            x_px = np.append(x_px, x_prev[0])
-            x_py = np.append(x_py, x_prev[1])
-            x_prev = x_next
+    def bfgs(self, x_prev, x_next):
+        delta_k = x_next - x_prev
+        gamma_k = self.optimizer.g(x_next) - self.optimizer.g(x_prev)
+        divide = np.dot(delta_k.T, gamma_k)
+        first = np.dot(np.dot(gamma_k.T, self.optimizer.Ginv), gamma_k)/divide
+        second = np.dot(delta_k, delta_k.T)/divide
+        third = np.dot(np.dot(delta_k, gamma_k.T), self.optimizer.Ginv) + np.dot(np.dot(self.optimizer.Ginv, gamma_k), delta_k.T)
+        return  self.optimizer.Ginv + np.dot((1 + first), second) - third/divide
