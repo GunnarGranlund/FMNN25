@@ -14,18 +14,22 @@ class Solver:
     def solve(self, A, b):
         return linalg.solve(A, b)
 
+    def problem_solve_omega2(self, u1, u2, u3):
+        return u2
+
+    def problem_solve_other(self, u1, u2, u3):
+        return u1, u2
+
     def iterate(self):
         u1 = self.solve(self.A1, self.b1)
         u2 = self.solve(self.A2, self.b2)
         u3 = self.solve(self.A3, self.b3)
         k = 1
         while k < 10:
-            u2 = problem_solve_omega2(u1, u2, u3)
-            u1, u3 = problem_solve_other(u1, u2, u3)
+            u2 = self.problem_solve_omega2(u1, u2, u3)
+            u1, u3 = self.problem_solve_other(u1, u2, u3)
             relaxation()
             k += 1
-
-        
 
 
 if __name__ == '__main__':
