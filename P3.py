@@ -5,9 +5,9 @@ from scipy import linalg
 
 class RoomHeatingProblem:
     def __init__(self, dx, type=None):
-        self.temp1 = 40
-        self.temp2 = 15
-        self.temp3 = 5
+        self.heating_wall = 40
+        self.normal_wall = 15
+        self.window_wall = 5
         self.dx = dx
         self.type = type
         if type == 'first':
@@ -26,16 +26,20 @@ class RoomHeatingProblem:
             dX = (1 / (self.dx ** 2)) * np.eye(len(A1[0]))
             k = 0
             bc = np.array([])
+            b = np.zeros(len(a))
             for i in range(len(self.grid1[0])):
                 for j in range(len(self.grid1[0])):
-                    if (self.grid1[i][j]) == 0:
+                    if (self.grid1[i][j]) == 1:
                         bc = np.append(bc, k)
+                        b[k] = 1
                     k += 1
         for i in range(len(a)):
-            if i not in bc:
+            if i in bc:
                 A1[i] = A1[i] - A1[i]
                 A1[i][i] = 1
-        return A1
+        b[1:len(self.grid1[0])] = b[1 + len(self.grid1[0])*3:len(b)] = self.normal_wall
+        b[0] = b[len(self.grid1[0])] = b[2*len(self.grid1[0])] = b[3*len(self.grid1[0])] = self.heating_wall
+        return A1, b
 
 
 class Solver:
@@ -89,4 +93,5 @@ if __name__ == '__main__':
     wall_window = 5
 
     Room1 = RoomHeatingProblem(1 / 3, type='first')
-    print(Room1.A_matrix())
+    A, b = Room1.A_matrix()
+    print(A)
