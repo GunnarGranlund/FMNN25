@@ -10,12 +10,18 @@ class RoomHeatingProblem:
         self.window_wall = 5
         self.dx = dx
         self.type = type
+        self.A1 = 0
+        self.b = 0
         if type == 'first':
             X = 1
             Y = 1
             self.grid1 = np.zeros((round(X / self.dx) + 1, round(Y / self.dx) + 1))
             self.grid1[0] = self.grid1[-1] = self.grid1[:, 0] = np.ones(len(self.grid1[0]))
             self.grid1[0][0] = self.grid1[-1][0] = 1
+
+    def __call__(self):
+        self.A_matrix()
+        return self.A1, self.b, self.grid1
 
     def A_matrix(self):
         if self.type == 'first':
@@ -39,6 +45,8 @@ class RoomHeatingProblem:
                 A1[i][i] = 1
         b[1:len(self.grid1[0])] = b[1 + len(self.grid1[0])*3:len(b)] = self.normal_wall
         b[0] = b[len(self.grid1[0])] = b[2*len(self.grid1[0])] = b[3*len(self.grid1[0])] = self.heating_wall
+        self.A1 = A1
+        self.b = b
         return A1, b
 
 
@@ -81,6 +89,14 @@ class Solver:
             old_u3 = u3
 
 
+def create_temp_room(grid, u):
+    idx = 0
+    for i in range(grid.shape[0]):
+        for k in range(grid.shape[1]):
+            grid[i][k] = u[idx]
+            idx += 1
+    return grid
+
 if __name__ == '__main__':
     room1 = np.zeros((10, 10))
     room2 = np.zeros((10, 20))
@@ -93,5 +109,8 @@ if __name__ == '__main__':
     wall_window = 5
 
     Room1 = RoomHeatingProblem(1 / 3, type='first')
-    A, b = Room1.A_matrix()
-    print(A)
+    A, b, grid = Room1()
+    u = linalg.solve(A, b)
+    grid = create_temp_room(grid, u)
+    print(grid)
+
