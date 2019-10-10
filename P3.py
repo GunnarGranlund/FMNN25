@@ -20,16 +20,25 @@ class Solver:
     def problem_solve_other(self, u1, u2, u3):
         return u1, u2
 
+    def relaxation(self, old_u1, old_u2, old_u3, u1, u2, u3):
+        u1 = omega*u1 + (1-omega)*old_u1
+        u2 = omega*u2 + (1-omega)*old_u2
+        u3 = omega*u3 + (1-omega)*old_u3
+        return u1, u2, u3
+
     def iterate(self):
-        u1 = self.solve(self.A1, self.b1)
-        u2 = self.solve(self.A2, self.b2)
-        u3 = self.solve(self.A3, self.b3)
+        old_u1 = self.solve(self.A1, self.b1)
+        old_u2 = self.solve(self.A2, self.b2)
+        old_u3 = self.solve(self.A3, self.b3)
         k = 1
         while k < 10:
-            u2 = self.problem_solve_omega2(u1, u2, u3)
-            u1, u3 = self.problem_solve_other(u1, u2, u3)
-            relaxation()
+            u2 = self.problem_solve_omega2(old_u1, old_u2, old_u3)
+            u1, u3 = self.problem_solve_other(old_u1, u2, old_u3)
+            u1, u2, u3 = self.relaxation(old_u1, old_u2, old_u3, u1, u2, u3)
             k += 1
+            old_u1 = u1
+            old_u2 = u2
+            old_u3 = u3
 
 
 if __name__ == '__main__':
