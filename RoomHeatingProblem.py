@@ -57,6 +57,15 @@ class RoomHeatingProblem:
             a = np.zeros(len(self.grid1[0]) ** 2)
             a[0] = -4
             a[1] = a[len(a) - 1] = a[len(self.grid1[0])] = a[len(self.grid1[0] * (len(self.grid1[0] - 1)))] = 1
+            a_neu = np.zeros(len(self.grid1[0]) ** 2)
+            a_neu[0] = -3
+            a_neu[len(self.grid1[0])] = a_neu[3*len(self.grid1[0])] = a_neu[len(a_neu) - 1] = 1
+            a_neu_boundary = np.zeros(len(self.grid1[0]) ** 2)
+            a_neu_boundary[0] = -2
+            a_neu_boundary[len(self.grid1[0])] = a_neu_boundary[len(a_neu_boundary) - 1] = 1
+            A_neu_boundary = toeplitz(a_neu_boundary)
+            print(A_neu_boundary)
+            A_neu = toeplitz(a_neu)
             A = toeplitz(a)
             dX = (1 / (self.dx ** 2)) * np.eye(len(A[0]))
             k = 0
@@ -109,6 +118,15 @@ class RoomHeatingProblem:
             if i in bc:
                 A[i] = A[i] - A[i]
                 A[i][i] = self.dx ** 2
+            if self.type == 'first':
+                if i in self.u1_r1[1:len(self.u1_r1) - 2]:
+                    A[i] = A_neu[i]
+                A[int(self.u1_r1[0])] = A_neu_boundary[int(self.u1_r1[0])]
+                A[-1] = np.zeros(len(A[-1]))
+                A[-1, -1] = -2
+                A[-1, -2] = 1
+                A[-1, -5] = 1
+                
 
         if self.type == 'first':
             b[1:len(self.grid1[0])] = b[1 + len(self.grid1[0]) * 3:len(b)] = self.normal_wall
@@ -129,4 +147,21 @@ class RoomHeatingProblem:
                 b[i * len(self.grid3[0]) + len(self.grid3[0]) - 1] = self.heating_wall
         return np.dot(dX, A), b
 
-Room1 = RoomHeatingProblem(1/3, type='first')
+Room1 = RoomHeatingProblem(1 / 3, type='first')
+A1, b1, grid1 = Room1()
+u1 = linalg.solve(A1, b1)
+
+def create_temp_room(grid, u):
+    idx = 0
+    for i in range(grid.shape[0]):
+        for k in range(grid.shape[1]):
+            grid[i][k] = u[idx]
+            idx += 1
+    return grid
+    
+
+grid1 = create_temp_room(grid1, u1)
+print(A1)
+plt.imshow(grid1)
+plt.colorbar()
+plt.show()
