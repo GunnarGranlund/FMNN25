@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 
 class RoomHeatingProblem:
-    def __init__(self, dx, type = None):
+    def __init__(self, dx, type=None):
         self.heating_wall = 40
         self.normal_wall = 15
         self.window_wall = 5
@@ -23,7 +23,7 @@ class RoomHeatingProblem:
             self.grid2 = np.zeros((round(X / self.dx) + 1, round(Y / self.dx) + 1))
             self.grid2[0] = self.grid2[-1] = np.ones(len(self.grid2[0]))
             self.grid2[0:len(self.grid2[0]), 0] = self.grid2[len(self.grid2[0]) \
-                - 1:2*len(self.grid2[0]), len(self.grid2[0])-1] = 1
+                                                             - 1:2 * len(self.grid2[0]), len(self.grid2[0]) - 1] = 1
             self.grid2[-1][-1] = self.grid2[0][-1] = 1
         if type == 'third':
             X = 1
@@ -31,7 +31,7 @@ class RoomHeatingProblem:
             self.grid3 = np.zeros((round(X / self.dx) + 1, round(Y / self.dx) + 1))
             self.grid3[0] = self.grid3[-1] = self.grid3[:, len(self.grid3[0]) - 1] = np.ones(len(self.grid3[0]))
             self.grid3[-1][-1] = self.grid3[0][-1] = 1
-    
+
     def __call__(self):
         A, b = self.A_matrix()
         if self.type == 'first':
@@ -59,7 +59,7 @@ class RoomHeatingProblem:
                     k += 1
 
         if self.type == 'second':
-            a = np.zeros(len(self.grid2[0]) * len(self.grid2[:,0]))
+            a = np.zeros(len(self.grid2[0]) * len(self.grid2[:, 0]))
             a[0] = -4
             a[1] = a[len(a) - 1] = a[len(self.grid2[0])] = a[len(self.grid2[0] * (len(self.grid2[0] - 1)))] = 1
             A = toeplitz(a)
@@ -67,7 +67,7 @@ class RoomHeatingProblem:
             k = 0
             bc = np.array([])
             b = np.zeros(len(a))
-            for i in range(len(self.grid2[:,0])):
+            for i in range(len(self.grid2[:, 0])):
                 for j in range(len(self.grid2[0])):
                     if (self.grid2[i][j]) == 1:
                         bc = np.append(bc, k)
@@ -90,28 +90,26 @@ class RoomHeatingProblem:
         for i in range(len(a)):
             if i in bc:
                 A[i] = A[i] - A[i]
-                A[i][i] = self.dx**2
+                A[i][i] = self.dx ** 2
 
         if self.type == 'first':
-            b[1:len(self.grid1[0])] = b[1 + len(self.grid1[0])*3:len(b)] = self.normal_wall
-            for i in range(len(self.grid1[0,:])):
+            b[1:len(self.grid1[0])] = b[1 + len(self.grid1[0]) * 3:len(b)] = self.normal_wall
+            for i in range(len(self.grid1[0, :])):
                 b[i * len(self.grid1[0])] = self.heating_wall
-        
+
         if self.type == 'second':
-            for i in range(len(self.grid2[0])): 
+            for i in range(len(self.grid2[0])):
                 b[i * len(self.grid2[0])] = self.normal_wall
             for i in range(len(self.grid2[0])):
-                b[i * len(self.grid2[0]) + len(self.grid2[0])**2 - 1] = self.normal_wall
+                b[i * len(self.grid2[0]) + len(self.grid2[0]) ** 2 - 1] = self.normal_wall
             b[0:len(self.grid2[0])] = self.heating_wall
             b[len(b) - len(self.grid2[0]):len(b)] = self.window_wall
-        
+
         if self.type == 'third':
-            b[0:len(self.grid3[0])] = b[len(self.grid3[0])*3:len(b)] = self.normal_wall
+            b[0:len(self.grid3[0])] = b[len(self.grid3[0]) * 3:len(b)] = self.normal_wall
             for i in range(len(self.grid3[0])):
                 b[i * len(self.grid3[0]) + len(self.grid3[0]) - 1] = self.heating_wall
         return np.dot(dX, A), b
-
-        
 
 
 class Solver:
@@ -161,6 +159,17 @@ def create_temp_room(grid, u):
             idx += 1
     return grid
 
+
+def plot_apart(grid1, grid2, grid3):
+    egrid = np.zeros((len(grid1[0]) - 1, len(grid1[0])))
+    G1 = np.append(egrid, grid1, axis=0)
+    G2 = np.append(grid3, egrid, axis=0)
+    G3 = np.append(G1, grid2, axis=1)
+    G4 = np.append(G3, G2, axis=1)
+    plt.imshow(G4)
+    plt.colorbar()
+    plt.show()
+
 if __name__ == '__main__':
     room1 = np.zeros((10, 10))
     room2 = np.zeros((10, 20))
@@ -172,9 +181,9 @@ if __name__ == '__main__':
     wall_heater = 40
     wall_window = 5
 
-    Room1 = RoomHeatingProblem(1 / 3, type = 'first')
-    Room2 = RoomHeatingProblem(1 / 3, type = 'second')
-    Room3 = RoomHeatingProblem(1 / 3, type = 'third')
+    Room1 = RoomHeatingProblem(1 / 3, type='first')
+    Room2 = RoomHeatingProblem(1 / 3, type='second')
+    Room3 = RoomHeatingProblem(1 / 3, type='third')
     A1, b1, grid1 = Room1()
     A2, b2, grid2 = Room2()
     A3, b3, grid3 = Room3()
@@ -182,14 +191,8 @@ if __name__ == '__main__':
     u2 = linalg.solve(A2, b2)
     u3 = linalg.solve(A3, b3)
     grid1 = create_temp_room(grid1, u1)
-    egrid = np.zeros((len(grid1[0])-1, len(grid1[0])))
+
     grid2 = create_temp_room(grid2, u2)
     grid3 = create_temp_room(grid3, u3)
-    G1 = np.append(egrid, grid1, axis=0)
-    G2 = np.append(grid3, egrid, axis=0)
-    G3 = np.append(G1, grid2, axis=1)
-    G4 = np.append(G3, G2, axis=1)
-    print(A1)
-    #plt.imshow(G4)
-    #plt.colorbar()
-    #plt.show()
+    plot_apart(grid1, grid2, grid3)
+
