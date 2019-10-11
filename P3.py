@@ -61,6 +61,7 @@ class Solver:
         return u1, u3
 
     def relaxation(self, old_u1, old_u2, old_u3, u1, u2, u3):
+        omega = 0.8
         u1 = omega * u1 + (1 - omega) * old_u1
         u2 = omega * u2 + (1 - omega) * old_u2
         u3 = omega * u3 + (1 - omega) * old_u3
@@ -83,7 +84,6 @@ class Solver:
 
 
 if __name__ == '__main__':
-    omega = 0.8
     delta_x = 1 / 20
 
     Room1 = RoomHeatingProblem(delta_x, type='first')
