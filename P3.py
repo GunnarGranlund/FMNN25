@@ -92,17 +92,3 @@ if __name__ == '__main__':
 
     solve = Solver(Room1, Room2, Room3)
     solve.plot_apart()
-
-    """A1, b1, grid1 = Room1()
-    A2, b2, grid2 = Room2()
-    A3, b3, grid3 = Room3()
-    u1 = linalg.solve(A1, b1)
-    u2 = linalg.solve(A2, b2)
-    u3 = linalg.solve(A3, b3)
-    grid1 = create_temp_room(grid1, u1)
-
-    grid2 = create_temp_room(grid2, u2)
-    grid3 = create_temp_room(grid3, u3)
-    plot_apart(grid1, grid2, grid3)
-    """
-
