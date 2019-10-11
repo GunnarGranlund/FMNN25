@@ -48,14 +48,14 @@ class Solver:
         return linalg.solve(A, b)
 
     def problem_solve_omega2(self, u1, u3):
-        for i in range(4):
+        for i in range(len(self.u1_r1)):
             self.b2[int(self.u2_r1[i])] = u1[int(self.u1_r1[i])]
             self.b2[int(self.u2_r2[i])] = u3[int(self.u3_r2[i])]
         u2 = self.solve(self.A2, self.b2)
         return u2
 
     def problem_solve_other(self, u1, u2, u3):
-        for i in range(4):
+        for i in range(len(self.u1_r1)):
             self.b1[int(self.u1_r1[i])] = u2[int(self.u2_r1[i])] - u1[int(self.u1_r1[i])]
             self.b3[int(self.u3_r2[i])] = u2[int(self.u2_r2[i])] - u3[int(self.u3_r2[i])]
         u1 = self.solve(self.A1, self.b1)
