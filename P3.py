@@ -50,16 +50,14 @@ class Solver:
     def problem_solve_omega2(self, u1, u3):
         for i in range(4):
             self.b2[int(self.u2_r1[i])] = u1[int(self.u1_r1[i])]
-        for k in range(4):
-            self.b2[int(self.u2_r2[k])] = u3[int(self.u3_r2[k])]
+            self.b2[int(self.u2_r2[i])] = u3[int(self.u3_r2[i])]
         u2 = self.solve(self.A2, self.b2)
         return u2
 
     def problem_solve_other(self, u1, u2, u3):
         for i in range(4):
             self.b1[int(self.u1_r1[i])] = u2[int(self.u2_r1[i])] - u1[int(self.u1_r1[i])]
-        for k in range(4):
-            self.b3[int(self.u3_r2[k])] = u2[int(self.u2_r2[i])] - u3[int(self.u3_r2[k])]
+            self.b3[int(self.u3_r2[i])] = u2[int(self.u2_r2[i])] - u3[int(self.u3_r2[i])]
         u1 = self.solve(self.A1, self.b1)
         u3 = self.solve(self.A3, self.b3)
         return u1, u3
@@ -75,7 +73,7 @@ class Solver:
         old_u1 = self.solve(self.A1, self.b1)
         old_u2 = self.solve(self.A2, self.b2)
         old_u3 = self.solve(self.A3, self.b3)
-        k = 10
+        k = 0
         while k < 10:
             u2 = self.problem_solve_omega2(old_u1, old_u3)
             u1, u3 = self.problem_solve_other(old_u1, u2, old_u3)
