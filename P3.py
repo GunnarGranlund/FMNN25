@@ -5,6 +5,7 @@ from RoomHeatingProblem import *
 
 class Solver:
     def __init__(self, room1, room2, room3):
+        self.dx = room1.dx
         self.A1 = room1.A
         self.b1 = room1.b
         self.A2 = room2.A
@@ -51,13 +52,16 @@ class Solver:
         for i in range(len(self.u1_r1)):
             self.b2[int(self.u2_r1[i])] = u1[int(self.u1_r1[i])]
             self.b2[int(self.u2_r2[i])] = u3[int(self.u3_r2[i])]
+        self.A2 = Room2.A_matrix(self.b2)
         u2 = self.solve(self.A2, self.b2)
         return u2
 
     def problem_solve_other(self, u1, u2, u3):
         for i in range(len(self.u1_r1)):
-            self.b1[int(self.u1_r1[i])] = u2[int(self.u2_r1[i])] - u1[int(self.u1_r1[i])]
-            self.b3[int(self.u3_r2[i])] = u2[int(self.u2_r2[i])] - u3[int(self.u3_r2[i])]
+            self.b1[int(self.u1_r1[i])] = (u2[int(self.u2_r1[i])] - u1[int(self.u1_r1[i])])/self.dx
+            self.b3[int(self.u3_r2[i])] = (u2[int(self.u2_r2[i])] - u3[int(self.u3_r2[i])])/self.dx
+        #self.A1 = Room1.A_matrix(self.b1)
+        #self.A3 = Room3.A_matrix(self.b3)
         u1 = self.solve(self.A1, self.b1)
         u3 = self.solve(self.A3, self.b3)
         return u1, u3
@@ -86,7 +90,7 @@ class Solver:
 
 
 if __name__ == '__main__':
-    delta_x = 1 / 3
+    delta_x = 1 / 20
 
     Room1 = RoomHeatingProblem(delta_x, type='first')
     Room2 = RoomHeatingProblem(delta_x, type='second')

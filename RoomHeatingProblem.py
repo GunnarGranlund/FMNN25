@@ -39,9 +39,10 @@ class RoomHeatingProblem:
             self.grid3[-1][-1] = self.grid3[0][-1] = 1
             self.grid3[0:len(self.grid3[0]), 0] = 2
             self.u3_r2 = np.array([])
-        A, b = self.A_matrix()
+
+        self.b = self.create_initial_b()
+        A = self.A_matrix(self.b)
         self.A = A
-        self.b = b 
     def __call__(self):
         A, b = self.A_matrix()
         if self.type == 'first':
@@ -52,7 +53,7 @@ class RoomHeatingProblem:
             grid = self.grid3
         return A, b, grid
 
-    def A_matrix(self):
+    def A_matrix(self, b):
         if self.type == 'first':
             a = np.zeros(len(self.grid1[0]) ** 2)
             a[0] = -4
@@ -67,7 +68,6 @@ class RoomHeatingProblem:
             dX = (1 / (self.dx ** 2)) * np.eye(len(A[0]))
             k = 0
             bc = np.array([])
-            b = np.zeros(len(a))
             for i in range(len(self.grid1[0])):
                 for j in range(len(self.grid1[0])):
                     if (self.grid1[i][j]) == 1:
@@ -84,7 +84,6 @@ class RoomHeatingProblem:
             dX = (1 / (self.dx ** 2)) * np.eye(len(A[0]))
             k = 0
             bc = np.array([])
-            b = np.zeros(len(a))
             for i in range(len(self.grid2[:, 0])):
                 for j in range(len(self.grid2[0])):
                     if (self.grid2[i][j]) == 1:
@@ -109,7 +108,6 @@ class RoomHeatingProblem:
             dX = (1 / (self.dx ** 2)) * np.eye(len(A[0]))
             k = 0
             bc = np.array([])
-            b = np.zeros(len(a))
             for i in range(len(self.grid3[0])):
                 for j in range(len(self.grid3[0])):
                     if (self.grid3[i][j]) == 1:
@@ -117,8 +115,8 @@ class RoomHeatingProblem:
                     if self.grid3[i][j] == 2:
                         self.u3_r2 = np.append(self.u3_r2, k)
                     k += 1
-        for i in range(len(a)):
-            if i in bc:
+        for i in range(len(b)):
+            if b[i] != 0:
                 A[i] = A[i] - A[i]
                 A[i][i] = self.dx ** 2
             if self.type == 'first':
@@ -127,14 +125,17 @@ class RoomHeatingProblem:
             if self.type == 'third':
                 if i in self.u3_r2[0:len(self.u3_r2)]:
                     A[i] = A_neu[i]
+        return np.dot(dX, A)
                 
-
+    def create_initial_b(self):
         if self.type == 'first':
+            b = np.zeros(len(self.grid1[0])**2)
             b[1:len(self.grid1[0])] = b[1 + len(self.grid1[0]) * (len(self.grid1[0]) - 1):len(b)] = self.normal_wall
             for i in range(len(self.grid1[0, :])):
                 b[i * len(self.grid1[0])] = self.heating_wall
 
         if self.type == 'second':
+            b = np.zeros(len(self.grid2[0])*len(self.grid2[:,0]))
             for i in range(len(self.grid2[0])):
                 b[i * len(self.grid2[0])] = self.normal_wall
             for i in range(len(self.grid2[0])):
@@ -143,8 +144,11 @@ class RoomHeatingProblem:
             b[len(b) - len(self.grid2[0]):len(b)] = self.window_wall
 
         if self.type == 'third':
+            b = np.zeros(len(self.grid3[0])**2)
             b[0:len(self.grid3[0])] = b[len(self.grid3[0]) * (len(self.grid3[0]) - 1):len(b)] = self.normal_wall
             for i in range(len(self.grid3[0])):
                 b[i * len(self.grid3[0]) + len(self.grid3[0]) - 1] = self.heating_wall
-        return np.dot(dX, A), b
+        return b
+                
+        
 
