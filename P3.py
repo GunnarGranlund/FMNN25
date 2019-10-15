@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from RoomHeatingProblem import *
 
 
+
 class Solver:
     def __init__(self, room1, room2, room3):
         self.dx = room1.dx
@@ -31,8 +32,7 @@ class Solver:
                 idx += 1
         return grid
 
-    def plot_apart(self):
-        u1, u2, u3 = self.iterate()
+    def plot_apart(self, u1, u2, u3):
         grid1 = self.create_temp_room(self.grid1, u1)
         grid2 = self.create_temp_room(self.grid2, u2)
         grid3 = self.create_temp_room(self.grid3, u3)
@@ -58,10 +58,8 @@ class Solver:
 
     def problem_solve_other(self, u1, u2, u3):
         for i in range(len(self.u1_r1)):
-            self.b1[int(self.u1_r1[i])] = (u2[int(self.u2_r1[i])] - u1[int(self.u1_r1[i])])/self.dx
-            self.b3[int(self.u3_r2[i])] = (u2[int(self.u2_r2[i])] - u3[int(self.u3_r2[i])])/self.dx
-        #self.A1 = Room1.A_matrix(self.b1)
-        #self.A3 = Room3.A_matrix(self.b3)
+            self.b1[int(self.u1_r1[i])] = -(u2[int(self.u2_r1[i]) + 1] - u1[int(self.u1_r1[i])])/(self.dx**2)
+            self.b3[int(self.u3_r2[i])] = -(u2[int(self.u2_r2[i]) - 1] - u3[int(self.u3_r2[i])])/(self.dx**2)
         u1 = self.solve(self.A1, self.b1)
         u3 = self.solve(self.A3, self.b3)
         return u1, u3
@@ -97,4 +95,5 @@ if __name__ == '__main__':
     Room3 = RoomHeatingProblem(delta_x, type='third')
 
     solve = Solver(Room1, Room2, Room3)
-    solve.plot_apart()
+    u1, u2, u3 = solve()
+    solve.plot_apart(u1, u2, u3)

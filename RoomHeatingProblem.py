@@ -28,7 +28,7 @@ class RoomHeatingProblem:
                          - 1:2 * len(self.grid2[0]), len(self.grid2[0]) - 1] = 1
             self.grid2[-1][-1] = self.grid2[0][-1] = 1
             self.grid2[len(self.grid2[0])-1:len(self.grid2[:,0]), 0] = 2
-            self.grid2[0:len(self.grid2[0]), len(self.grid2[0])-1] = 3
+            self.grid2[1:len(self.grid2[0])-1, len(self.grid2[0]) - 1] = 3
             self.u2_r1 = np.array([])
             self.u2_r2 = np.array([])
         if type == 'third':
@@ -37,13 +37,14 @@ class RoomHeatingProblem:
             self.grid3 = np.zeros((round(X / self.dx) + 1, round(Y / self.dx) + 1))
             self.grid3[0] = self.grid3[-1] = self.grid3[:, len(self.grid3[0]) - 1] = np.ones(len(self.grid3[0]))
             self.grid3[-1][-1] = self.grid3[0][-1] = 1
-            self.grid3[0:len(self.grid3[0]), 0] = 2
+            self.grid3[1:len(self.grid3[0])-1, 0] = 2
             self.u3_r2 = np.array([])
 
         self.b = self.create_initial_b()
         A = self.A_matrix(self.b)
         self.A = A
     def __call__(self):
+        
         A, b = self.A_matrix()
         if self.type == 'first':
             grid = self.grid1
@@ -79,7 +80,7 @@ class RoomHeatingProblem:
         if self.type == 'second':
             a = np.zeros(len(self.grid2[0]) * len(self.grid2[:, 0]))
             a[0] = -4
-            a[1] = a[len(a) - 1] = a[len(self.grid2[0])] = a[len(self.grid2[0] * (len(self.grid2[0] - 1)))] = 1
+            a[1] = a[-1] = a[len(self.grid2[0])] = a[-len(self.grid2[0])] = 1
             A = toeplitz(a)
             dX = (1 / (self.dx ** 2)) * np.eye(len(A[0]))
             k = 0
@@ -120,10 +121,10 @@ class RoomHeatingProblem:
                 A[i] = A[i] - A[i]
                 A[i][i] = self.dx ** 2
             if self.type == 'first':
-                if i in self.u1_r1[0:len(self.u1_r1)]:
+                if i in self.u1_r1:
                     A[i] = A_neu[i]
             if self.type == 'third':
-                if i in self.u3_r2[0:len(self.u3_r2)]:
+                if i in self.u3_r2:
                     A[i] = A_neu[i]
         return np.dot(dX, A)
                 
