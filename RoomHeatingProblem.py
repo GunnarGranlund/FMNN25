@@ -17,7 +17,7 @@ class RoomHeatingProblem:
             self.grid1 = np.zeros((round(X / self.dx) + 1, round(Y / self.dx) + 1))
             self.grid1[0] = self.grid1[-1] = self.grid1[:, 0] = np.ones(len(self.grid1[0]))
             self.grid1[0][0] = self.grid1[-1][0] = 1
-            self.grid1[0:len(self.grid1[0]), len(self.grid1[0]) - 1 ] = 2
+            self.grid1[1:len(self.grid1[0]) - 1, len(self.grid1[0]) - 1 ] = 2
             self.u1_r1 = np.array([])
         if type == 'second':
             X = 2
@@ -56,16 +56,13 @@ class RoomHeatingProblem:
         if self.type == 'first':
             a = np.zeros(len(self.grid1[0]) ** 2)
             a[0] = -4
-            a[1] = a[len(a) - 1] = a[len(self.grid1[0])] = a[len(self.grid1[0] * (len(self.grid1[0] - 1)))] = 1
+            a[1] = a[-1] = a[len(self.grid1[0])] = a[-len(self.grid1[0])] = 1
             a_neu = np.zeros(len(self.grid1[0]) ** 2)
             a_neu[0] = -3
-            a_neu[len(self.grid1[0])] = a_neu[3*len(self.grid1[0])] = a_neu[len(a_neu) - 1] = 1
-            a_neu_boundary = np.zeros(len(self.grid1[0]) ** 2)
-            a_neu_boundary[0] = -2
-            a_neu_boundary[len(self.grid1[0])] = a_neu_boundary[len(a_neu_boundary) - 1] = 1
-            A_neu_boundary = toeplitz(a_neu_boundary)
-            print(A_neu_boundary)
-            A_neu = toeplitz(a_neu)
+            a_neu[-len(self.grid1[0])] = a_neu[len(self.grid1[0])] = 1
+            a_neu2 = a_neu.copy()
+            a_neu2[1] = 1
+            A_neu = toeplitz(a_neu2, a_neu)
             A = toeplitz(a)
             dX = (1 / (self.dx ** 2)) * np.eye(len(A[0]))
             k = 0
@@ -119,17 +116,14 @@ class RoomHeatingProblem:
                 A[i] = A[i] - A[i]
                 A[i][i] = self.dx ** 2
             if self.type == 'first':
-                if i in self.u1_r1[1:len(self.u1_r1) - 2]:
+                if i in self.u1_r1[0:len(self.u1_r1)]:
                     A[i] = A_neu[i]
-                A[int(self.u1_r1[0])] = A_neu_boundary[int(self.u1_r1[0])]
-                A[-1] = np.zeros(len(A[-1]))
-                A[-1, -1] = -2
-                A[-1, -2] = 1
-                A[-1, -5] = 1
+                #A[int(self.u1_r1[0])] = A_neu_boundary[int(self.u1_r1[0])]
+                #A[int(self.u1_r1[-1])] = A_neu_boundary[int(self.u1_r1[-1])]
                 
 
         if self.type == 'first':
-            b[1:len(self.grid1[0])] = b[1 + len(self.grid1[0]) * 3:len(b)] = self.normal_wall
+            b[1:len(self.grid1[0])] = b[1 + len(self.grid1[0]) * (len(self.grid1[0]) - 1):len(b)] = self.normal_wall
             for i in range(len(self.grid1[0, :])):
                 b[i * len(self.grid1[0])] = self.heating_wall
 
@@ -139,7 +133,7 @@ class RoomHeatingProblem:
             for i in range(len(self.grid2[0])):
                 b[i * len(self.grid2[0]) + len(self.grid2[0]) ** 2 - 1] = self.normal_wall
             b[0:len(self.grid2[0])] = self.heating_wall
-            b[len(b) - len(self.grid2[0]):len(b)] = self.window_wall
+            b[len(b) - 1 - len(self.grid2[0]):len(b)] = self.window_wall
 
         if self.type == 'third':
             b[0:len(self.grid3[0])] = b[len(self.grid3[0]) * 3:len(b)] = self.normal_wall
@@ -147,21 +141,3 @@ class RoomHeatingProblem:
                 b[i * len(self.grid3[0]) + len(self.grid3[0]) - 1] = self.heating_wall
         return np.dot(dX, A), b
 
-Room1 = RoomHeatingProblem(1 / 3, type='first')
-A1, b1, grid1 = Room1()
-u1 = linalg.solve(A1, b1)
-
-def create_temp_room(grid, u):
-    idx = 0
-    for i in range(grid.shape[0]):
-        for k in range(grid.shape[1]):
-            grid[i][k] = u[idx]
-            idx += 1
-    return grid
-    
-
-grid1 = create_temp_room(grid1, u1)
-print(A1)
-plt.imshow(grid1)
-plt.colorbar()
-plt.show()
