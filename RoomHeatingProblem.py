@@ -98,7 +98,13 @@ class RoomHeatingProblem:
         if self.type == 'third':
             a = np.zeros(len(self.grid3[0]) ** 2)
             a[0] = -4
-            a[1] = a[len(a) - 1] = a[len(self.grid3[0])] = a[len(self.grid3[0] * (len(self.grid3[0] - 1)))] = 1
+            a[1] = a[-1] = a[len(self.grid3[0])] = a[-len(self.grid3[0])] = 1
+            a_neu = np.zeros(len(self.grid3[0]) ** 2)
+            a_neu[0] = -3
+            a_neu[-len(self.grid3[0])] = a_neu[len(self.grid3[0])] = 1
+            a_neu2 = a_neu.copy()
+            a_neu2[1] = 1
+            A_neu = toeplitz(a_neu, a_neu2)
             A = toeplitz(a)
             dX = (1 / (self.dx ** 2)) * np.eye(len(A[0]))
             k = 0
@@ -118,8 +124,9 @@ class RoomHeatingProblem:
             if self.type == 'first':
                 if i in self.u1_r1[0:len(self.u1_r1)]:
                     A[i] = A_neu[i]
-                #A[int(self.u1_r1[0])] = A_neu_boundary[int(self.u1_r1[0])]
-                #A[int(self.u1_r1[-1])] = A_neu_boundary[int(self.u1_r1[-1])]
+            if self.type == 'third':
+                if i in self.u3_r2[0:len(self.u3_r2)]:
+                    A[i] = A_neu[i]
                 
 
         if self.type == 'first':
@@ -133,10 +140,10 @@ class RoomHeatingProblem:
             for i in range(len(self.grid2[0])):
                 b[i * len(self.grid2[0]) + len(self.grid2[0]) ** 2 - 1] = self.normal_wall
             b[0:len(self.grid2[0])] = self.heating_wall
-            b[len(b) - 1 - len(self.grid2[0]):len(b)] = self.window_wall
+            b[len(b) - len(self.grid2[0]):len(b)] = self.window_wall
 
         if self.type == 'third':
-            b[0:len(self.grid3[0])] = b[len(self.grid3[0]) * 3:len(b)] = self.normal_wall
+            b[0:len(self.grid3[0])] = b[len(self.grid3[0]) * (len(self.grid3[0]) - 1):len(b)] = self.normal_wall
             for i in range(len(self.grid3[0])):
                 b[i * len(self.grid3[0]) + len(self.grid3[0]) - 1] = self.heating_wall
         return np.dot(dX, A), b
