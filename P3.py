@@ -1,6 +1,7 @@
 from scipy import linalg
 import matplotlib.pyplot as plt
 from RoomHeatingProblem import *
+import numpy as np
 
 
 
@@ -25,20 +26,22 @@ class Solver:
         return self.iterate()
 
     def create_temp_room(self, grid, u):
+        new_grid = np.zeros((len(grid[:,0]) - 1, len(grid[0]) - 1))
         idx = 0
-        for i in range(grid.shape[0]):
-            for k in range(grid.shape[1]):
+        for i in range(grid.shape[0] - 1):
+            for k in range(grid.shape[1] - 1):
+                new_grid[i][k] = (u[i + idx] + u[idx + i + 1] + u[idx + i + len(grid[0])] + u[idx + i + 1 + len(grid[0])])/4
                 grid[i][k] = u[idx]
                 idx += 1
-        return grid
+        return new_grid
 
     def plot_apart(self, u1, u2, u3):
         grid1 = self.create_temp_room(self.grid1, u1)
         grid2 = self.create_temp_room(self.grid2, u2)
         grid3 = self.create_temp_room(self.grid3, u3)
-        egrid = np.zeros((len(grid1[0]) - 1, len(grid1[0])))
-        G1 = np.append(egrid, grid1, axis=0)
-        G2 = np.append(grid3, egrid, axis=0)
+        egrid = np.zeros((len(grid1[0]), len(grid1[0])))
+        G1 = np.append(egrid, grid1[:, 0:len(grid1[0])], axis=0)
+        G2 = np.append(grid3[:, 0:len(grid3[0])], egrid, axis=0)
         G3 = np.append(G1, grid2, axis=1)
         G4 = np.append(G3, G2, axis=1)
         plt.imshow(G4)
