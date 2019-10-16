@@ -27,8 +27,8 @@ class RoomHeatingProblem:
             self.grid2[0:len(self.grid2[0]), 0] = self.grid2[len(self.grid2[0]) \
                          - 1:2 * len(self.grid2[0]), len(self.grid2[0]) - 1] = 1
             self.grid2[-1][-1] = self.grid2[0][-1] = 1
-            self.grid2[len(self.grid2[0])-1:len(self.grid2[:,0]), 0] = 2
-            self.grid2[1:len(self.grid2[0])-1, len(self.grid2[0]) - 1] = 3
+            self.grid2[len(self.grid2[0]):len(self.grid2[:,0]) - 1, 0] = 2
+            self.grid2[1:len(self.grid2[0]) - 1, len(self.grid2[0]) - 1] = 3
             self.u2_r1 = np.array([])
             self.u2_r2 = np.array([])
         if type == 'third':
@@ -41,8 +41,7 @@ class RoomHeatingProblem:
             self.u3_r2 = np.array([])
 
         self.b = self.create_initial_b()
-        A = self.A_matrix(self.b)
-        self.A = A
+        self.A = self.A_matrix(self.b)
     def __call__(self):
         
         A, b = self.A_matrix()
@@ -139,7 +138,6 @@ class RoomHeatingProblem:
             b = np.zeros(len(self.grid2[0])*len(self.grid2[:,0]))
             for i in range(len(self.grid2[0])):
                 b[i * len(self.grid2[0])] = self.normal_wall
-            for i in range(len(self.grid2[0])):
                 b[i * len(self.grid2[0]) + len(self.grid2[0]) ** 2 - 1] = self.normal_wall
             b[0:len(self.grid2[0])] = self.heating_wall
             b[len(b) - len(self.grid2[0]):len(b)] = self.window_wall
